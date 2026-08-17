@@ -28,7 +28,11 @@ docs/
 Complex modules also carry a module-level `README.md` inside `src/<module>/`
 covering their design, public surface, and important constraints.
 
-The current module-release contract is in
+The model every provider is held to is in
+[`specs/unified-hosting-api.md`](specs/unified-hosting-api.md), and the reasoning
+behind it in
+[`adr/0002-a-provider-agnostic-hosting-model.md`](adr/0002-a-provider-agnostic-hosting-model.md).
+The module-release contract is in
 [`specs/tinybus-module-release.md`](specs/tinybus-module-release.md), with its
 implementation sequence in
 [`plans/tinybus-module-release.md`](plans/tinybus-module-release.md).

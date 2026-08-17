@@ -1,26 +1,30 @@
 # Roadmap
 
-Replace this file with the real plan for the crate generated from this
-template, or delete it if the project does not need a public roadmap.
-
-Keep it short and honest: what exists, what is next, and what is deliberately
-out of scope. A roadmap that lists everything is a roadmap nobody trusts.
+What exists, what is next, and what is deliberately out of scope.
 
 ## Shipped
 
-- module layout, crate-wide error type, and the public re-export surface
-- lint configuration in `[lints]`, enforced identically locally and in CI
-- CI: format, clippy, build, test, per-file coverage, rustdoc, MSRV, and
-  supply-chain checks
-- a manual release workflow that versions, tags, publishes to crates.io, and
-  creates a GitHub release with crate and TinyBus runtime/module assets
+- The unified hosting model: `Host`, its vocabulary, `Bundle`, and `launch`.
+- The Vercel adapter: projects, non-Git deployments, environment variables,
+  marketplace databases, domains, promotion, and web analytics.
+- `rpc`: one JSON request in, one JSON result out, and the TinyBus module over
+  it.
 
 ## Next
 
-- the first real feature area, replacing the placeholder `greeting` module
-- module-level `README.md` and `docs/spec/` entries as modules grow
+- A second provider, to find the Vercel-shaped assumptions in the vocabulary.
+  Railway first — the same model with a first-party database — then Cloudflare,
+  whose bindings are the model's real stress test. See
+  [`docs/specs/unified-hosting-api.md`](docs/specs/unified-hosting-api.md).
+- A self-hosted target, which is what proves the model is not shaped around a
+  platform.
+- Deployment log streaming: a failed build currently reports a message, not the
+  build output that explains it.
 
 ## Out Of Scope
 
-- anything that cannot be tested deterministically
-- convenience wrappers that hide the crate's error taxonomy from callers
+- Waiting, retrying, or scheduling. How long a caller will wait for a build is
+  the caller's policy, and a hidden one cannot be cancelled or reported on.
+- Holding a connection string, or any secret the provider injects itself.
+- Wrapping a provider's whole API. The model covers shipping and running an
+  application; anything beyond that is reached through the provider's own client.

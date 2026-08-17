@@ -4,8 +4,8 @@
 //!
 //! ```text
 //! cargo run --example verify_github_release -- \
-//!   https://github.com/tinyhumansai/rust-template/releases/tag/v0.1.4 \
-//!   rust-template-0.1.4-ubuntu-24.04-x86_64.tar.gz \
+//!   https://github.com/tinyhumansai/tinyhosts/releases/tag/v0.1.5 \
+//!   tinyhosts-0.1.5-ubuntu-24.04-x86_64.tar.gz \
 //!   <sha256>
 //! ```
 
@@ -17,8 +17,8 @@ use tinybus::broker::Broker;
 use tinybus::module::ModuleHost;
 use tinybus::transport::memory::MemoryBus;
 
-const INTERFACE: &str = "ai.tinyhumans.rust_template.Greeting";
-const OBJECT_PATH: &str = "/ai/tinyhumans/rust_template/Greeting";
+const INTERFACE: &str = "ai.tinyhumans.tinyhosts.Hosting";
+const OBJECT_PATH: &str = "/ai/tinyhumans/tinyhosts/Hosting";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -56,12 +56,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await??;
 
     let proxy = client.proxy(INTERFACE, OBJECT_PATH, INTERFACE)?;
-    let greeting: String = proxy.call("Greet", ("TinyBus",)).await?;
-    if greeting != "Hello, TinyBus!" {
-        return Err(io::Error::other(format!(
-            "module returned an unexpected greeting: {greeting}"
-        ))
-        .into());
+    let providers: String = proxy.call("Providers", ()).await?;
+    if !providers.contains("vercel") {
+        return Err(
+            io::Error::other(format!("module reported unexpected providers: {providers}")).into(),
+        );
     }
 
     println!(
