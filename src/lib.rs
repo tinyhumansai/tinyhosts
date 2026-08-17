@@ -57,6 +57,7 @@ pub mod launch;
 pub mod providers;
 pub mod rpc;
 
+#[cfg(feature = "module")]
 mod tinybus_module;
 
 pub use bundle::{Bundle, EXCLUDED, SiteFile};

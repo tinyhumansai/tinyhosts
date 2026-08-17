@@ -93,6 +93,15 @@ failing later with a missing `DATABASE_URL`.
 Pin a specific product with `DatabaseSpec::with_product` when an account has more
 than one that would match.
 
+## Features
+
+`vercel` (default) is the provider. `module` (default) is the TinyBus module —
+the bus interface, the ABI exports and the `cdylib` a TinyBus host loads. A
+downstream that links the library directly takes
+`default-features = false, features = ["vercel"]` and gets no TinyBus in its
+graph, which is what OpenHuman does: it vendors its own TinyBus, and two path
+copies of one package cannot both be written to a lockfile.
+
 ## Adding a provider
 
 Implement `Host`, add a `ProviderKind` variant, and wire it into `connect_to`.
