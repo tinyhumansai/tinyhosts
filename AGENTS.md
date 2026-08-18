@@ -4,40 +4,26 @@ This file is the single source of truth for how humans and coding agents work
 in this repository. `CLAUDE.md` is a symlink to this file, so every agent reads
 the same instructions.
 
-When you generate a new project from this template, keep this file and adapt
-the project-specific parts (crate name, module map, feature flags, commands).
-Delete guidance that no longer applies rather than leaving it to rot.
-
-## Template Checklist
-
-Do this once, in a single commit, before writing feature code:
-
-- [ ] Set `name`, `description`, `repository`, `keywords`, and `categories` in
-      `Cargo.toml`.
-- [ ] Rename the crate references in `README.md`, `src/lib.rs`, `examples/`,
-      and `tests/` (search for `rust_template` and `rust-template`).
-- [ ] Replace the placeholder `greeting` module with the first real feature
-      area, keeping the `mod.rs` / `types.rs` / `test.rs` layout.
-- [ ] Confirm `license` and `LICENSE` match the project's intended license.
-- [ ] Update the security contact in `SECURITY.md`.
-- [ ] Replace `ROADMAP.md` with the real plan, or delete it.
-- [ ] Rename the TinyBus interface, object path, and declared methods in
-      `src/tinybus_module/` while keeping `vendor/tinybus` pinned.
-- [ ] Rewrite the "Project Structure" section below to describe this crate.
-
 ## Project Structure
 
-This is a Rust 2024 library crate rooted at `Cargo.toml`.
+This is a Rust 2024 library crate rooted at `Cargo.toml`. It is both an ordinary
+library and a TinyBus module: the `cdylib` is the same code behind a JSON method.
 
 ```text
 src/
 ├── lib.rs              # crate docs + the entire public re-export surface
 ├── error/mod.rs        # crate-wide `Error` and `Result<T>`
-├── tinybus_module/     # TinyBus interface, ABI exports, and integration tests
-└── <feature>/          # one directory per feature area
-    ├── mod.rs          # module docs, wiring, smallest useful public API
-    ├── types.rs        # substantial type definitions
-    └── test.rs         # module-local unit tests
+├── credentials/        # the API key: redacted, deserialize-only
+├── host/               # the `Host` trait (mod.rs) and the unified vocabulary
+│   └── types.rs        #   every provider-independent type
+├── bundle/             # an application's files, and reading them off disk
+├── launch/             # the whole flow, in the one order that works
+├── providers/
+│   ├── mod.rs          # `ProviderKind`, `connect`, `connect_to`
+│   └── vercel/         # one adapter: mod.rs (the `Host` impl),
+│                       #   http.rs (status mapping), wire.rs (Vercel's shapes)
+├── rpc/                # one JSON request in, one JSON result out
+└── tinybus_module/     # TinyBus interface, ABI exports, and integration tests
 tests/                  # integration tests against the public API only
 examples/               # runnable, compiled-in-CI usage examples
 vendor/tinybus/         # pinned TinyBus host types and module SDK
@@ -46,6 +32,23 @@ docs/
 ├── plans/              # test-first implementation plans
 └── adr/                # immutable architecture decision records
 ```
+
+The model every provider is held to is
+[`docs/specs/unified-hosting-api.md`](docs/specs/unified-hosting-api.md); the
+reasoning behind it is ADR 2. Read both before changing the `Host` trait or the
+types in `host/types.rs` — they are a contract two other repositories depend on.
+
+Four rules are load-bearing and must survive any change:
+
+- **A secret travels one way.** `Credentials` has no `Serialize`; a listed
+  environment variable has no value; a `Database` reports variable *names*, never
+  a connection string. Do not add a getter, a `Serialize`, or a log line that
+  breaks this.
+- **A capability a provider lacks returns `Error::Unsupported`.** Never `Ok`.
+- **A provider state this crate does not model is carried through** as
+  `DeploymentStatus::Other` / `Framework::Other`, not mapped onto a known one.
+- **`launch`'s order is the specification**, not an implementation detail. The
+  test that asserts the request sequence is the one that protects it.
 
 Each feature area belongs in a focused module directory under `src/`. A module
 root explains the module, wires its pieces together, and exposes the smallest
@@ -67,6 +70,18 @@ Keep public exports centralized in `src/lib.rs` so downstream users have one
 predictable surface. Put shared error variants in `src/error/mod.rs` and return
 the crate-wide `Result<T>` from fallible public APIs.
 
+### Provider adapters
+
+A new provider is a directory under `src/providers/`, a `ProviderKind` variant,
+and an arm in `connect_to`. Keep the three-file split the Vercel adapter uses:
+the `Host` implementation, the HTTP plumbing that owns status-to-error mapping in
+one place, and the provider's own request and response shapes. The provider's
+vocabulary stops at `wire.rs`; nothing above it should know the word `readyState`.
+
+Test an adapter against a local mock of its REST API — never the live service and
+never a hand-written fake of `Host`, which would only confirm the behavior it was
+written to expect. `Vercel::with_base_url` exists for exactly this.
+
 ## Build And Test
 
 Run every command from the repository root. These four are the contract; CI
@@ -83,7 +98,7 @@ Supporting commands:
 
 - `cargo fmt --all` — format before committing.
 - `cargo test <filter>` — run a focused subset while iterating.
-- `cargo run --example basic` — run the bundled example.
+- `cargo run --example basic` — build a launch plan without sending it.
 - `cargo doc --no-deps --all-features` — build the rustdoc CI also builds with
   `RUSTDOCFLAGS="-D warnings"`.
 - `cargo test --doc` — run doctests alone when editing documentation examples.

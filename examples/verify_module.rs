@@ -9,8 +9,8 @@ use tinybus::broker::Broker;
 use tinybus::module::ModuleHost;
 use tinybus::transport::memory::MemoryBus;
 
-const INTERFACE: &str = "ai.tinyhumans.rust_template.Greeting";
-const OBJECT_PATH: &str = "/ai/tinyhumans/rust_template/Greeting";
+const INTERFACE: &str = "ai.tinyhumans.tinyhosts.Hosting";
+const OBJECT_PATH: &str = "/ai/tinyhumans/tinyhosts/Hosting";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -43,12 +43,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     .await??;
 
     let proxy = client.proxy(INTERFACE, OBJECT_PATH, INTERFACE)?;
-    let greeting: String = proxy.call("Greet", ("TinyBus",)).await?;
-    if greeting != "Hello, TinyBus!" {
-        return Err(io::Error::other(format!(
-            "module returned an unexpected greeting: {greeting}"
-        ))
-        .into());
+    let providers: String = proxy.call("Providers", ()).await?;
+    if !providers.contains("vercel") {
+        return Err(
+            io::Error::other(format!("module reported unexpected providers: {providers}")).into(),
+        );
     }
 
     println!(

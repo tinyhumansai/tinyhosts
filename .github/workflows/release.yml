@@ -248,7 +248,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
           $libraryName = $env:CRATE_NAME.Replace('-', '_')
           $module = "target/release/$libraryName.dll"
-          $verifyRoot = Join-Path $env:RUNNER_TEMP 'rust-template-module-verify'
+          $verifyRoot = Join-Path $env:RUNNER_TEMP 'tinyhosts-module-verify'
           New-Item -ItemType Directory -Force $verifyRoot | Out-Null
 
           $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()

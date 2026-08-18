@@ -1,38 +1,82 @@
-//! A production-ready starting point for an installable `TinyBus` module.
+//! One API for putting a Next.js application, and the database behind it, on a
+//! real hosting provider.
 //!
-//! This crate is a template. It ships the layout, lint configuration, error
-//! handling, testing, and documentation conventions described in `AGENTS.md`.
-//! The compiled `cdylib` exports `TinyBus` module ABI v1 and serves the example
-//! [`greet`] behavior over the bus.
+//! `TinyHosts` is the hosting category of the `TinyHumans` stack: `OpenHuman`
+//! vendors it, `OpenCompany` inherits it from there, and a user who pastes a
+//! provider API key into `OpenCompany` gets a live site out of a workspace. The unit of work is
+//! deliberately the whole thing — a site, a managed database wired into it, the
+//! environment it reads, a domain, and the traffic it served — because that is
+//! what "host this" means, and a library that only uploads files leaves every
+//! caller to reinvent the other four steps.
 //!
-//! # Layout
+//! # The shape
 //!
-//! - `src/error/` holds the crate-wide [`Error`] enum and the [`Result`] alias
-//!   returned by every fallible public function.
-//! - Each feature area lives in its own module directory with a `mod.rs`
-//!   module root, an optional `types.rs`, and a `test.rs` holding its unit
-//!   tests.
-//! - Every public item is re-exported from here, so downstream users have a
-//!   single predictable surface.
-//! - `tinybus_module` adapts the public behavior to `TinyBus` and exports the
-//!   module descriptor, embedded manifest, and initialization entrypoint.
+//! - [`Host`] is the provider-agnostic interface. [`Vercel`] is the first
+//!   implementation of it.
+//! - [`ProviderKind`] and [`connect`] make the provider a configuration value
+//!   rather than a compile-time choice.
+//! - [`Bundle`] is the application's files as the provider will receive them.
+//! - [`launch()`] runs the whole flow in the one order that works.
+//! - [`rpc`] is the same surface as JSON, for the callers in another process,
+//!   and the `TinyBus` module is a thin wrapper over it.
 //!
 //! # Example
 //!
-//! ```
-//! use rust_template::{greet, Error};
+//! ```no_run
+//! use tinyhosts::{Bundle, Credentials, DatabaseSpec, LaunchPlan, ProviderKind, SiteSpec, launch};
 //!
-//! assert_eq!(greet("Ferris")?, "Hello, Ferris!");
-//! assert_eq!(greet("   ").unwrap_err(), Error::EmptyName);
-//! # Ok::<(), rust_template::Error>(())
+//! # async fn ship() -> tinyhosts::Result<()> {
+//! let host = tinyhosts::connect(ProviderKind::Vercel, Credentials::new("vercel-token")?)?;
+//!
+//! let plan = LaunchPlan::new(SiteSpec::new("shop"), Bundle::from_dir("./shop")?)
+//!     .with_database(DatabaseSpec::new("shop-db"))
+//!     .into_production();
+//!
+//! let result = launch(host.as_ref(), &plan).await?;
+//! println!("building at {:?}", result.url());
+//! # Ok(())
+//! # }
 //! ```
 //!
-//! Replace the `greeting` module with the first real feature area, keep the
-//! conventions, and update this documentation to describe the new crate.
+//! The launch returns while the build is still running: poll
+//! [`Host::deployment`] until its
+//! [`status`](host::types::DeploymentStatus::is_terminal) settles.
+//!
+//! # What this crate does not do
+//!
+//! It does not hold a connection string, decrypt an environment variable, or
+//! return a secret it was given. It does not wait, retry, or schedule — a
+//! caller's patience is the caller's policy. And it does not pretend: a
+//! capability a provider lacks is [`Error::Unsupported`], never a silent success.
 
-mod error;
-mod greeting;
+pub mod bundle;
+pub mod credentials;
+pub mod error;
+pub mod host;
+pub mod launch;
+pub mod providers;
+pub mod rpc;
+
+#[cfg(feature = "module")]
 mod tinybus_module;
 
+pub use bundle::{Bundle, EXCLUDED, SiteFile};
+pub use credentials::Credentials;
 pub use error::{Error, Result};
-pub use greeting::greet;
+pub use host::Host;
+pub use host::types::{
+    AnalyticsBucket, AnalyticsDimension, AnalyticsQuery, AnalyticsSummary, Database, DatabaseKind,
+    DatabaseSpec, DeployRequest, Deployment, DeploymentStatus, DeploymentTarget, Domain, EnvVar,
+    EnvVarRecord, Framework, Site, SiteSpec,
+};
+pub use launch::launch;
+pub use launch::types::{Launch, LaunchPlan};
+pub use providers::{ProviderKind, connect, connect_from_env, connect_to};
+
+#[cfg(feature = "vercel")]
+pub use providers::vercel::Vercel;
+
+// `rpc`'s own names — `Request`, `Operation`, `Outcome` — are only unambiguous
+// next to each other, so they stay in their module rather than being flattened
+// into the crate root.
+pub use rpc::{execute, execute_json};
