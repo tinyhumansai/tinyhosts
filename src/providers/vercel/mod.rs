@@ -70,8 +70,18 @@ impl Vercel {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Transport`] when the HTTP client cannot be built.
+    /// Returns [`Error::InsecureBaseUrl`] when `base_url` is `http://` against a
+    /// non-loopback host — this constructor sends the bearer credential to
+    /// every request `base_url` produces, the same as
+    /// [`connect_to`](crate::providers::connect_to), and applies the same
+    /// check. Returns [`Error::Transport`] when the HTTP client cannot be
+    /// built.
     pub fn with_base_url(credentials: Credentials, base_url: impl Into<String>) -> Result<Self> {
+        let base_url = base_url.into();
+        if !crate::providers::is_secure_base_url(&base_url) {
+            return Err(Error::InsecureBaseUrl { base_url });
+        }
+
         Ok(Self {
             http: Http::new(credentials, base_url)?,
         })

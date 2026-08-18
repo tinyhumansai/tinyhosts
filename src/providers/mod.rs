@@ -187,7 +187,13 @@ pub fn connect_to(
 /// `localhost`, `127.0.0.1`/`127.x.x.x`, or `::1` — a mock server's or an
 /// egress proxy's loopback listener never leaves the machine, so plain HTTP
 /// there costs nothing a caller could intercept.
-fn is_secure_base_url(base_url: &str) -> bool {
+///
+/// `pub(crate)` because [`vercel::Vercel::with_base_url`] applies the same
+/// check: it is a second, lower-level way to reach the same client
+/// [`connect_to`] builds, and skipping the check there would just move the
+/// cleartext-credential exposure this guards against to a different entry
+/// point rather than closing it.
+pub(crate) fn is_secure_base_url(base_url: &str) -> bool {
     if let Some(rest) = base_url.strip_prefix("https://") {
         return !rest.is_empty();
     }
