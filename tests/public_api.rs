@@ -88,7 +88,7 @@ fn a_bundle_reads_a_directory_and_skips_what_a_build_produces() {
     let bundle = Bundle::from_dir(root.path()).unwrap();
 
     assert_eq!(bundle.len(), 1);
-    assert_eq!(bundle.files()[0].path, "package.json");
+    assert_eq!(bundle.files()[0].path(), "package.json");
     assert!(tinyhosts::EXCLUDED.contains(&"node_modules"));
 }
 

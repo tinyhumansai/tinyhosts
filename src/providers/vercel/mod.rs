@@ -344,10 +344,10 @@ impl Host for Vercel {
 
         let mut files = Vec::with_capacity(request.bundle.len());
         for file in request.bundle.files() {
-            let sha = digest(&file.contents);
-            self.upload(&sha, &file.contents).await?;
+            let sha = digest(file.contents());
+            self.upload(&sha, file.contents()).await?;
             files.push(UploadedFile {
-                file: file.path.clone(),
+                file: file.path().to_owned(),
                 sha,
                 size: file.len(),
             });
@@ -501,15 +501,32 @@ fn env_targets(targets: &[DeploymentTarget]) -> Vec<&'static str> {
         return vec!["production", "preview", "development"];
     }
 
-    let mut names: Vec<&'static str> = targets
-        .iter()
-        .map(|target| match target {
+    let mut names: Vec<&'static str> = Vec::with_capacity(targets.len());
+    for target in targets {
+        let name = match target {
             DeploymentTarget::Production => "production",
             DeploymentTarget::Preview => "preview",
-        })
-        .collect();
-    names.dedup();
+        };
+        // A plain `Vec::dedup` only catches adjacent repeats; a caller-supplied
+        // target list is not guaranteed sorted, so this checks the whole list
+        // built so far instead.
+        if !names.contains(&name) {
+            names.push(name);
+        }
+    }
     names
+}
+
+/// The characters a Vercel API path segment does not need escaped.
+///
+/// Everything else — `/`, `?`, `#` and the rest of [`NON_ALPHANUMERIC`] —
+/// becomes a percent-escape, so a caller-supplied site name, deployment id, or
+/// domain cannot add a path segment, a query string, or a `..` of its own to
+/// an authenticated request.
+///
+/// [`NON_ALPHANUMERIC`]: percent_encoding::NON_ALPHANUMERIC
+fn encode_segment(value: &str) -> impl fmt::Display + '_ {
+    percent_encoding::utf8_percent_encode(value, percent_encoding::NON_ALPHANUMERIC)
 }
 
 /// The SHA-1 digest of a deployment file, hex encoded, as `x-vercel-digest`

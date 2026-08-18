@@ -255,7 +255,7 @@ pub struct Deployment {
 /// The value is write-only across this API: it goes out in a request and is
 /// never returned, because a provider that hands back decrypted secrets on a
 /// list call is a provider this crate would be leaking through.
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EnvVar {
     /// The variable's name.
     pub key: String,
@@ -267,6 +267,24 @@ pub struct EnvVar {
     /// Whether the provider should store it write-only.
     #[serde(default)]
     pub secret: bool,
+}
+
+/// Prints the key and targets, never the value.
+///
+/// `EnvVar` reaches [`Operation::SetEnv`](crate::rpc::Operation::SetEnv) and
+/// [`LaunchPlan`](crate::launch::types::LaunchPlan), both of which derive
+/// `Debug`; a derived `Debug` here would put a secret's plaintext value in
+/// whatever log line renders one of those.
+impl std::fmt::Debug for EnvVar {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("EnvVar")
+            .field("key", &self.key)
+            .field("value", &"<redacted>")
+            .field("targets", &self.targets)
+            .field("secret", &self.secret)
+            .finish()
+    }
 }
 
 impl EnvVar {

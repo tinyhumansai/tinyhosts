@@ -244,8 +244,10 @@ impl Bundle {
 impl TryFrom<Vec<SiteFile>> for Bundle {
     type Error = Error;
 
-    /// Revalidates every path, because a deserialized bundle did not go through
-    /// [`SiteFile::new`].
+    /// Collapses any duplicate path to its last occurrence, the same rule
+    /// [`Bundle::insert`] applies one file at a time. Each `SiteFile` already
+    /// carries a validated path, so this only re-runs [`SiteFile::new`]'s cheap
+    /// normalization, not the check itself.
     fn try_from(files: Vec<SiteFile>) -> Result<Self> {
         let mut bundle = Self::new();
         for file in files {

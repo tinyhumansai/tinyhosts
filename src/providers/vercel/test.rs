@@ -1131,4 +1131,14 @@ fn an_empty_target_list_means_every_environment() {
         env_targets(&[DeploymentTarget::Production, DeploymentTarget::Production]),
         ["production"]
     );
+    // Non-adjacent duplicates: a plain `Vec::dedup` would miss the repeated
+    // `Production` here because `Preview` sits between the two occurrences.
+    assert_eq!(
+        env_targets(&[
+            DeploymentTarget::Production,
+            DeploymentTarget::Preview,
+            DeploymentTarget::Production,
+        ]),
+        ["production", "preview"]
+    );
 }

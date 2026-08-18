@@ -131,6 +131,16 @@ fn a_blank_env_key_is_rejected() {
 }
 
 #[test]
+fn debug_prints_the_key_and_never_the_value() {
+    let var = EnvVar::new("STRIPE_KEY", "sk_live_hunter2");
+    let rendered = format!("{var:?}");
+
+    assert!(rendered.contains("STRIPE_KEY"), "{rendered}");
+    assert!(!rendered.contains("sk_live_hunter2"), "{rendered}");
+    assert!(rendered.contains("<redacted>"), "{rendered}");
+}
+
+#[test]
 fn a_database_defaults_to_postgres() {
     let spec = DatabaseSpec::new("shop-db");
 

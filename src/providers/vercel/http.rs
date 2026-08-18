@@ -7,6 +7,7 @@
 //! missing resource in another.
 
 use std::fmt;
+use std::time::Duration;
 
 use reqwest::{Client, Method, RequestBuilder, Response, StatusCode};
 use serde::Serialize;
@@ -17,6 +18,17 @@ use crate::{Credentials, Error, Result};
 
 /// Vercel's public API root.
 pub(crate) const DEFAULT_BASE_URL: &str = "https://api.vercel.com";
+
+/// How long a TCP handshake may take before this crate gives up on it.
+const CONNECT_TIMEOUT: Duration = Duration::from_secs(15);
+
+/// How long one request may run, upload included.
+///
+/// Vercel's own guidance and this crate's own docs agree a bundle is the
+/// largest payload it moves, so this is generous rather than tight: a
+/// `reqwest` client otherwise has no timeout at all, which turns a stalled
+/// connection into a hang this crate's caller can never see or cancel.
+const REQUEST_TIMEOUT: Duration = Duration::from_secs(300);
 
 /// An authenticated Vercel API client.
 pub(crate) struct Http {
@@ -49,6 +61,8 @@ impl Http {
     pub(crate) fn new(credentials: Credentials, base_url: impl Into<String>) -> Result<Self> {
         let client = Client::builder()
             .user_agent(concat!("tinyhosts/", env!("CARGO_PKG_VERSION")))
+            .connect_timeout(CONNECT_TIMEOUT)
+            .timeout(REQUEST_TIMEOUT)
             .build()
             .map_err(|error| Error::Transport {
                 provider: provider(),

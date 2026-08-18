@@ -56,6 +56,10 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 sha1 = { version = "0.10", optional = true }
 # Renders the SHA-1 digest as the lowercase hex string the upload header wants.
 hex = { version = "0.4", optional = true }
+# Percent-encodes an RPC-supplied identifier (site name, deployment id, domain)
+# before it is interpolated into a Vercel API path, so `/`, `?` and `..` in one
+# cannot redirect the request to a different route.
+percent-encoding = { version = "2", optional = true }
 
 # The two module-verification examples load a compiled `cdylib` through TinyBus's
 # own loader, so they only build when the module is in the build.
@@ -80,7 +84,7 @@ tempfile = "3"
 default = ["vercel", "module"]
 # The Vercel provider and the HTTP stack it needs. Off, the crate is the
 # provider-agnostic model alone: `Host`, its types, `Bundle`, and `launch`.
-vercel = ["dep:reqwest", "dep:sha1", "dep:hex"]
+vercel = ["dep:reqwest", "dep:sha1", "dep:hex", "dep:percent-encoding"]
 # The TinyBus module: the bus interface, the ABI exports, and the `cdylib` a
 # TinyBus host loads. On by default, because the installable module is how this
 # crate ships.
