@@ -1130,13 +1130,28 @@ async fn a_team_scope_is_applied_to_every_request() {
 
 #[test]
 fn the_client_reports_itself_without_its_token() {
-    let host =
-        Vercel::with_base_url(Credentials::new("super-secret").unwrap(), "http://x").unwrap();
+    let host = Vercel::with_base_url(
+        Credentials::new("super-secret").unwrap(),
+        "http://127.0.0.1:1",
+    )
+    .unwrap();
     let rendered = format!("{host:?}");
 
     assert!(!rendered.contains("super-secret"), "{rendered}");
     assert!(rendered.contains("<redacted>"), "{rendered}");
     assert_eq!(host.kind(), ProviderKind::Vercel);
+}
+
+#[test]
+fn with_base_url_rejects_plain_http_against_a_non_loopback_host() {
+    let error = Vercel::with_base_url(Credentials::new("token").unwrap(), "http://x").unwrap_err();
+
+    assert_eq!(
+        error,
+        Error::InsecureBaseUrl {
+            base_url: "http://x".to_owned()
+        }
+    );
 }
 
 #[test]
