@@ -40,17 +40,55 @@ pub const EXCLUDED: &[&str] = &[
     ".DS_Store",
     ".env",
     ".env.local",
+    ".env.development",
+    ".env.development.local",
+    ".env.production",
+    ".env.production.local",
+    ".env.test",
+    ".env.test.local",
 ];
 
 /// One file in a deployment.
+///
+/// The fields are private and validated at construction: a `SiteFile` cannot
+/// hold a path that is blank, absolute, or climbs out of the bundle, whether it
+/// is built through [`SiteFile::new`] or read back from a deserialized
+/// [`Bundle`]. A public `path` field would let a caller — or a JSON payload
+/// crossing the RPC boundary — set one directly and skip that check.
 #[derive(Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "RawSiteFile", into = "RawSiteFile")]
 pub struct SiteFile {
+    path: String,
+    contents: Vec<u8>,
+}
+
+/// The wire shape of [`SiteFile`], validated through [`SiteFile::new`] on the
+/// way in.
+#[derive(Serialize, Deserialize)]
+struct RawSiteFile {
     /// The path the file takes inside the deployment, relative and slash
     /// separated.
-    pub path: String,
+    path: String,
     /// The file's bytes, carried as base64 in serialized form.
     #[serde(with = "base64_bytes")]
-    pub contents: Vec<u8>,
+    contents: Vec<u8>,
+}
+
+impl TryFrom<RawSiteFile> for SiteFile {
+    type Error = Error;
+
+    fn try_from(raw: RawSiteFile) -> Result<Self> {
+        Self::new(raw.path, raw.contents)
+    }
+}
+
+impl From<SiteFile> for RawSiteFile {
+    fn from(file: SiteFile) -> Self {
+        Self {
+            path: file.path,
+            contents: file.contents,
+        }
+    }
 }
 
 impl SiteFile {
@@ -79,6 +117,19 @@ impl SiteFile {
             path: trimmed.to_owned(),
             contents: contents.into(),
         })
+    }
+
+    /// The path the file takes inside the deployment, relative and slash
+    /// separated.
+    #[must_use]
+    pub fn path(&self) -> &str {
+        &self.path
+    }
+
+    /// The file's bytes.
+    #[must_use]
+    pub fn contents(&self) -> &[u8] {
+        &self.contents
     }
 
     /// The file's size in bytes.

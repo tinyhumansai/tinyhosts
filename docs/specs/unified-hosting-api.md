@@ -17,11 +17,12 @@ Shipping an application is six things, not one:
 5. a **deployment** that builds and serves it;
 6. the **traffic** it served afterwards.
 
-Every provider does all six, and no two name them the same. A caller that
-integrates against one provider's API has hard-coded not just its endpoints but
-its shape — Vercel's "project" against Netlify's "site", Vercel's marketplace
-store against Railway's first-party Postgres. The unified model is the smallest
-vocabulary all of them can be said in.
+Providers expose different subsets of these six concerns, and no two name them
+the same. Unsupported capabilities must return `Error::Unsupported`. A caller
+that integrates against one provider's API has hard-coded not just its
+endpoints but its shape — Vercel's "project" against Netlify's "site", Vercel's
+marketplace store against Railway's first-party Postgres. The unified model is
+the smallest vocabulary all of them can be said in.
 
 ## The model
 

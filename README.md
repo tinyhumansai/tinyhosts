@@ -23,9 +23,9 @@ The unit of work is the whole thing, because that is what "host this" means:
 | Deployment | `deploy`, `deployment`, `list_deployments`, `promote` | file upload, then a build |
 | Traffic | `analytics` | the web analytics query API |
 
-[`launch`](src/launch/mod.rs) runs all six in the one order that works — the
-database is connected *before* the build, because a Next.js build reads its
-environment at build time.
+[`launch`](src/launch/mod.rs) runs the five hosting steps in the one order that
+works — the database is connected *before* the build, because a Next.js build
+reads its environment at build time.
 
 ## Using it
 
