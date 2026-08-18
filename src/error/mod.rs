@@ -136,6 +136,20 @@ pub enum Error {
         reason: String,
     },
 
+    /// An alternate API root was given over plain HTTP to a non-loopback host.
+    ///
+    /// [`connect_to`](crate::providers::connect_to) sends the account's bearer
+    /// credential to every request `base_url` produces, so an `http://` root
+    /// reaching outside the local machine would carry it in cleartext.
+    /// `https://` is always accepted; `http://` is accepted only against
+    /// `localhost`, `127.0.0.1`, or `::1`, which is what a test suite or a
+    /// local mock needs.
+    #[error("base url {base_url} must be https, or http against a loopback host")]
+    InsecureBaseUrl {
+        /// The rejected root, as it was supplied.
+        base_url: String,
+    },
+
     /// A provider was named that this build does not have.
     ///
     /// Either the name is not a provider, or its Cargo feature is off.

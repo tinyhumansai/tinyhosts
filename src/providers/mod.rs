@@ -148,13 +148,22 @@ pub fn connect(kind: ProviderKind, credentials: Credentials) -> Result<Box<dyn H
 ///
 /// # Errors
 ///
-/// Returns [`Error::UnknownProvider`] when this build has no adapter for `kind`,
-/// or a provider error when the client cannot be constructed.
+/// Returns [`Error::InsecureBaseUrl`] when `base_url` is `http://` against a
+/// non-loopback host, [`Error::UnknownProvider`] when this build has no adapter
+/// for `kind`, or a provider error when the client cannot be constructed.
 pub fn connect_to(
     kind: ProviderKind,
     credentials: Credentials,
     base_url: Option<&str>,
 ) -> Result<Box<dyn Host>> {
+    if let Some(base_url) = base_url {
+        if !is_secure_base_url(base_url) {
+            return Err(Error::InsecureBaseUrl {
+                base_url: base_url.to_owned(),
+            });
+        }
+    }
+
     match kind {
         #[cfg(feature = "vercel")]
         ProviderKind::Vercel => Ok(Box::new(match base_url {
@@ -169,6 +178,25 @@ pub fn connect_to(
             })
         }
     }
+}
+
+/// Whether `base_url` may carry a bearer credential.
+///
+/// Accepts every `https://` root. Accepts `http://` only when its host is
+/// `localhost`, `127.0.0.1`/`127.x.x.x`, or `::1` — a mock server's or an
+/// egress proxy's loopback listener never leaves the machine, so plain HTTP
+/// there costs nothing a caller could intercept.
+fn is_secure_base_url(base_url: &str) -> bool {
+    if let Some(rest) = base_url.strip_prefix("https://") {
+        return !rest.is_empty();
+    }
+    let Some(rest) = base_url.strip_prefix("http://") else {
+        return false;
+    };
+    let host = rest.split(['/', '?', '#']).next().unwrap_or("");
+    let host = host.rsplit_once(':').map_or(host, |(host, _)| host);
+    let host = host.trim_start_matches('[').trim_end_matches(']');
+    host == "localhost" || host == "127.0.0.1" || host == "::1" || host.starts_with("127.")
 }
 
 /// Connects to `kind` with the credential in the process environment.

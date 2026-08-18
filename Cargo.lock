@@ -1294,6 +1294,7 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "hex",
+ "percent-encoding",
  "reqwest",
  "serde",
  "serde_json",

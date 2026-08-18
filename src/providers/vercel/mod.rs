@@ -22,6 +22,8 @@
 //! variables into the project's environment. This crate never sees them, which
 //! is why [`Host::attach_database`] returns names rather than values.
 
+use std::fmt;
+
 use async_trait::async_trait;
 use reqwest::Method;
 use serde_json::Value;
@@ -200,9 +202,11 @@ impl Host for Vercel {
     }
 
     async fn find_site(&self, name: &str) -> Result<Option<Site>> {
-        let builder = self
-            .http
-            .request(Method::GET, &format!("/v9/projects/{name}"), &[]);
+        let builder = self.http.request(
+            Method::GET,
+            &format!("/v9/projects/{}", encode_segment(name)),
+            &[],
+        );
         let project: Option<Project> = self.http.optional_json(builder, "project").await?;
 
         Ok(project.map(Project::into_site))
@@ -243,7 +247,7 @@ impl Host for Vercel {
 
         self.http
             .post_discard(
-                &format!("/v10/projects/{site}/env"),
+                &format!("/v10/projects/{}/env", encode_segment(site)),
                 &[("upsert", "true".to_owned())],
                 &body,
                 "environment variables",
@@ -255,7 +259,7 @@ impl Host for Vercel {
         let envs: Envs = self
             .http
             .get_json(
-                &format!("/v10/projects/{site}/env"),
+                &format!("/v10/projects/{}/env", encode_segment(site)),
                 &[],
                 "environment variables",
             )
@@ -387,7 +391,11 @@ impl Host for Vercel {
     async fn deployment(&self, id: &str) -> Result<Deployment> {
         let deployment: DeploymentBody = self
             .http
-            .get_json(&format!("/v13/deployments/{id}"), &[], "deployment")
+            .get_json(
+                &format!("/v13/deployments/{}", encode_segment(id)),
+                &[],
+                "deployment",
+            )
             .await?;
 
         Ok(deployment.into_deployment(""))
@@ -414,7 +422,11 @@ impl Host for Vercel {
         let project = self.project_id(site).await?;
         let builder = self.http.request(
             Method::POST,
-            &format!("/v10/projects/{project}/promote/{deployment}"),
+            &format!(
+                "/v10/projects/{}/promote/{}",
+                encode_segment(&project),
+                encode_segment(deployment)
+            ),
             &[],
         );
 
@@ -430,7 +442,7 @@ impl Host for Vercel {
         let added: DomainBody = self
             .http
             .post_json(
-                &format!("/v10/projects/{site}/domains"),
+                &format!("/v10/projects/{}/domains", encode_segment(site)),
                 &[],
                 &CreateDomain { name },
                 "domain",
@@ -443,7 +455,11 @@ impl Host for Vercel {
     async fn list_domains(&self, site: &str) -> Result<Vec<Domain>> {
         let domains: Domains = self
             .http
-            .get_json(&format!("/v9/projects/{site}/domains"), &[], "domain list")
+            .get_json(
+                &format!("/v9/projects/{}/domains", encode_segment(site)),
+                &[],
+                "domain list",
+            )
             .await?;
 
         Ok(domains

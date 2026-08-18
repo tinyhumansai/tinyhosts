@@ -127,6 +127,29 @@ async fn a_missing_site_is_not_an_error() {
 }
 
 #[tokio::test]
+async fn a_path_shaped_site_name_cannot_redirect_the_request() {
+    let server = MockServer::start().await;
+    // If the raw name reached the URL unescaped, this would request
+    // `/v9/projects/other/domains` instead — a route this test never mounts.
+    mount(
+        &server,
+        "GET",
+        "/v9/projects/%2E%2E%2Fother%2Fdomains",
+        200,
+        json!({"id": "prj_4", "name": "../other/domains"}),
+    )
+    .await;
+
+    let site = host(&server)
+        .find_site("../other/domains")
+        .await
+        .unwrap()
+        .unwrap();
+
+    assert_eq!(site.id, "prj_4");
+}
+
+#[tokio::test]
 async fn lists_projects_up_to_a_limit() {
     let server = MockServer::start().await;
     Mock::given(method("GET"))
