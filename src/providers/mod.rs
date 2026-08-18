@@ -156,12 +156,13 @@ pub fn connect_to(
     credentials: Credentials,
     base_url: Option<&str>,
 ) -> Result<Box<dyn Host>> {
-    if let Some(base_url) = base_url {
-        if !is_secure_base_url(base_url) {
+    match base_url {
+        Some(base_url) if !is_secure_base_url(base_url) => {
             return Err(Error::InsecureBaseUrl {
                 base_url: base_url.to_owned(),
             });
         }
+        Some(_) | None => {}
     }
 
     match kind {

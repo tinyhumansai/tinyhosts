@@ -134,7 +134,7 @@ async fn a_path_shaped_site_name_cannot_redirect_the_request() {
     mount(
         &server,
         "GET",
-        "/v9/projects/%2E%2E%2Fother%2Fdomains",
+        "/v9/projects/..%2Fother%2Fdomains",
         200,
         json!({"id": "prj_4", "name": "../other/domains"}),
     )

@@ -130,6 +130,47 @@ fn connecting_can_target_another_api_root() {
 }
 
 #[test]
+fn connecting_over_plain_http_to_a_non_loopback_host_is_rejected() {
+    let error = connect_to(
+        ProviderKind::Vercel,
+        Credentials::new("token").unwrap(),
+        Some("http://api.example.com"),
+    )
+    .unwrap_err();
+
+    assert_eq!(
+        error,
+        Error::InsecureBaseUrl {
+            base_url: "http://api.example.com".to_owned()
+        }
+    );
+}
+
+#[test]
+fn connecting_over_https_to_any_host_is_allowed() {
+    let host = connect_to(
+        ProviderKind::Vercel,
+        Credentials::new("token").unwrap(),
+        Some("https://api.example.com"),
+    )
+    .unwrap();
+
+    assert_eq!(host.kind(), ProviderKind::Vercel);
+}
+
+#[test]
+fn connecting_over_plain_http_to_localhost_is_allowed() {
+    let host = connect_to(
+        ProviderKind::Vercel,
+        Credentials::new("token").unwrap(),
+        Some("http://localhost:1"),
+    )
+    .unwrap();
+
+    assert_eq!(host.kind(), ProviderKind::Vercel);
+}
+
+#[test]
 fn connecting_from_the_environment_either_works_or_reports_the_missing_key() {
     match connect_from_env(ProviderKind::Vercel) {
         Ok(host) => assert_eq!(host.kind(), ProviderKind::Vercel),

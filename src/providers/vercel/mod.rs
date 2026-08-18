@@ -533,16 +533,22 @@ fn env_targets(targets: &[DeploymentTarget]) -> Vec<&'static str> {
     names
 }
 
-/// The characters a Vercel API path segment does not need escaped.
+/// The characters a Vercel API path segment does not need escaped: RFC 3986's
+/// unreserved set, which is what a site name, deployment id, or domain is
+/// ordinarily made of.
 ///
-/// Everything else — `/`, `?`, `#` and the rest of [`NON_ALPHANUMERIC`] —
-/// becomes a percent-escape, so a caller-supplied site name, deployment id, or
-/// domain cannot add a path segment, a query string, or a `..` of its own to
-/// an authenticated request.
-///
-/// [`NON_ALPHANUMERIC`]: percent_encoding::NON_ALPHANUMERIC
+/// Everything else — `/`, `?`, `#` included — becomes a percent-escape, so a
+/// caller-supplied identifier cannot add a path segment, a query string, or a
+/// `..` of its own to an authenticated request.
+const PATH_SEGMENT: &percent_encoding::AsciiSet = &percent_encoding::NON_ALPHANUMERIC
+    .remove(b'-')
+    .remove(b'.')
+    .remove(b'_')
+    .remove(b'~');
+
+/// Percent-encodes `value` for use as one path segment.
 fn encode_segment(value: &str) -> impl fmt::Display + '_ {
-    percent_encoding::utf8_percent_encode(value, percent_encoding::NON_ALPHANUMERIC)
+    percent_encoding::utf8_percent_encode(value, PATH_SEGMENT)
 }
 
 /// The SHA-1 digest of a deployment file, hex encoded, as `x-vercel-digest`
