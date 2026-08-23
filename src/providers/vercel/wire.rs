@@ -15,8 +15,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::host::types::{
-    Database, DatabaseKind, Deployment, DeploymentLog, DeploymentStatus, DeploymentTarget,
-    Domain, EnvVarRecord, Framework, Site,
+    Database, DatabaseKind, Deployment, DeploymentLog, DeploymentStatus, DeploymentTarget, Domain,
+    EnvVarRecord, Framework, Site,
 };
 
 /// The body of `POST /v11/projects`.

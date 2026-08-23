@@ -237,10 +237,9 @@ pub async fn execute(request: Request) -> Result<Outcome> {
             .list_deployments(&site, limit)
             .await
             .map(Outcome::Deployments),
-        Operation::DeploymentLogs { id } => host
-            .deployment_logs(&id)
-            .await
-            .map(Outcome::DeploymentLogs),
+        Operation::DeploymentLogs { id } => {
+            host.deployment_logs(&id).await.map(Outcome::DeploymentLogs)
+        }
         Operation::Promote { site, deployment } => host
             .promote(&site, &deployment)
             .await
