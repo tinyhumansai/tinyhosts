@@ -516,7 +516,7 @@ async fn deployment_events_preserve_their_kind_message_and_timestamp() {
     assert_eq!(logs[0].kind, "stdout");
     assert_eq!(logs[0].message, "Building route /");
     assert_eq!(logs[1].kind, "error");
-    assert_eq!(logs[1].message, r#"{\"code\":\"BUILD_FAILED\"}"#);
+    assert_eq!(logs[1].message, r#"{"code":"BUILD_FAILED"}"#);
 }
 
 #[tokio::test]
