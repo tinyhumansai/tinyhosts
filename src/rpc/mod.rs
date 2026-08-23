@@ -16,8 +16,8 @@
 use serde::{Deserialize, Serialize};
 
 use crate::host::types::{
-    AnalyticsQuery, AnalyticsSummary, Database, DatabaseSpec, DeployRequest, Deployment, Domain,
-    EnvVar, EnvVarRecord, Site, SiteSpec,
+    AnalyticsQuery, AnalyticsSummary, Database, DatabaseSpec, DeployRequest, Deployment,
+    DeploymentLog, Domain, EnvVar, EnvVarRecord, Site, SiteSpec,
 };
 use crate::launch::types::{Launch, LaunchPlan};
 use crate::providers::{ProviderKind, connect_to};
@@ -119,6 +119,11 @@ pub enum Operation {
         #[serde(default = "default_limit")]
         limit: u32,
     },
+    /// List a deployment's build and runtime events, oldest first.
+    DeploymentLogs {
+        /// The deployment's identifier.
+        id: String,
+    },
     /// Point production traffic at an existing deployment.
     Promote {
         /// The site's name or identifier.
@@ -173,6 +178,8 @@ pub enum Outcome {
     Deployment(Deployment),
     /// Several deployments.
     Deployments(Vec<Deployment>),
+    /// A deployment's build and runtime events.
+    DeploymentLogs(Vec<DeploymentLog>),
     /// A site's environment variables, without their values.
     Env(Vec<EnvVarRecord>),
     /// One database.
@@ -230,6 +237,10 @@ pub async fn execute(request: Request) -> Result<Outcome> {
             .list_deployments(&site, limit)
             .await
             .map(Outcome::Deployments),
+        Operation::DeploymentLogs { id } => host
+            .deployment_logs(&id)
+            .await
+            .map(Outcome::DeploymentLogs),
         Operation::Promote { site, deployment } => host
             .promote(&site, &deployment)
             .await

@@ -12,10 +12,11 @@
 //! disagree about their names — `uid` against `id`, `state` against `readyState`.
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::host::types::{
-    Database, DatabaseKind, Deployment, DeploymentStatus, DeploymentTarget, Domain, EnvVarRecord,
-    Framework, Site,
+    Database, DatabaseKind, Deployment, DeploymentLog, DeploymentStatus, DeploymentTarget,
+    Domain, EnvVarRecord, Framework, Site,
 };
 
 /// The body of `POST /v11/projects`.
@@ -138,6 +139,41 @@ impl DeploymentBody {
 pub(super) struct Deployments {
     #[serde(default)]
     pub(super) deployments: Vec<DeploymentBody>,
+}
+
+/// The envelope returned by `GET /v3/deployments/{id}/events`.
+#[derive(Deserialize)]
+pub(super) struct DeploymentEvents {
+    #[serde(default)]
+    pub(super) events: Vec<DeploymentEvent>,
+}
+
+/// One Vercel deployment event.
+#[derive(Deserialize)]
+pub(super) struct DeploymentEvent {
+    #[serde(default)]
+    pub(super) created: Option<u64>,
+    #[serde(rename = "type")]
+    pub(super) kind: String,
+    #[serde(default)]
+    pub(super) payload: Option<Value>,
+}
+
+impl DeploymentEvent {
+    /// Preserves a non-string payload as JSON rather than silently losing it.
+    pub(super) fn into_log(self) -> DeploymentLog {
+        let message = match self.payload {
+            Some(Value::String(message)) => message,
+            Some(payload) => payload.to_string(),
+            None => String::new(),
+        };
+
+        DeploymentLog {
+            created_at_ms: self.created,
+            kind: self.kind,
+            message,
+        }
+    }
 }
 
 /// One entry of the `POST /v10/projects/{id}/env` array body.

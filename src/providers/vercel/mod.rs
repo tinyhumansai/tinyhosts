@@ -31,7 +31,8 @@ use serde_json::Value;
 use crate::host::Host;
 use crate::host::types::{
     AnalyticsBucket, AnalyticsQuery, AnalyticsSummary, Database, DatabaseSpec, DeployRequest,
-    Deployment, DeploymentTarget, Domain, EnvVar, EnvVarRecord, Framework, Site, SiteSpec,
+    Deployment, DeploymentLog, DeploymentTarget, Domain, EnvVar, EnvVarRecord, Framework, Site,
+    SiteSpec,
 };
 use crate::providers::ProviderKind;
 use crate::{Credentials, Error, Result};
@@ -39,8 +40,9 @@ use crate::{Credentials, Error, Result};
 use self::http::{DEFAULT_BASE_URL, Http};
 use self::wire::{
     AnalyticsEnvelope, Configuration, ConnectResource, CreateDeployment, CreateDomain,
-    CreateEnvVar, CreateProject, CreateStore, DeploymentBody, Deployments, DomainBody, Domains,
-    Envs, Products, Project, ProjectSettings, Projects, StoreEnvelope, UploadedFile,
+    CreateEnvVar, CreateProject, CreateStore, DeploymentBody, DeploymentEvents, Deployments,
+    DomainBody, Domains, Envs, Products, Project, ProjectSettings, Projects, StoreEnvelope,
+    UploadedFile,
 };
 
 mod http;
@@ -425,6 +427,23 @@ impl Host for Vercel {
             .deployments
             .into_iter()
             .map(|deployment| deployment.into_deployment(site))
+            .collect())
+    }
+
+    async fn deployment_logs(&self, id: &str) -> Result<Vec<DeploymentLog>> {
+        let events: DeploymentEvents = self
+            .http
+            .get_json(
+                &format!("/v3/deployments/{}/events", encode_segment(id)),
+                &[],
+                "deployment events",
+            )
+            .await?;
+
+        Ok(events
+            .events
+            .into_iter()
+            .map(self::wire::DeploymentEvent::into_log)
             .collect())
     }
 

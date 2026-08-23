@@ -493,6 +493,33 @@ async fn an_empty_deployment_list_decodes() {
 }
 
 #[tokio::test]
+async fn deployment_events_preserve_their_kind_message_and_timestamp() {
+    let server = MockServer::start().await;
+    mount(
+        &server,
+        "GET",
+        "/v3/deployments/dpl_1/events",
+        200,
+        json!({
+            "events": [
+                {"created": 2_u64, "type": "stdout", "payload": "Building route /"},
+                {"created": 3_u64, "type": "error", "payload": {"code": "BUILD_FAILED"}}
+            ]
+        }),
+    )
+    .await;
+
+    let logs = host(&server).deployment_logs("dpl_1").await.unwrap();
+
+    assert_eq!(logs.len(), 2);
+    assert_eq!(logs[0].created_at_ms, Some(2));
+    assert_eq!(logs[0].kind, "stdout");
+    assert_eq!(logs[0].message, "Building route /");
+    assert_eq!(logs[1].kind, "error");
+    assert_eq!(logs[1].message, r#"{\"code\":\"BUILD_FAILED\"}"#);
+}
+
+#[tokio::test]
 async fn promoting_resolves_the_project_first() {
     let server = MockServer::start().await;
     mount(

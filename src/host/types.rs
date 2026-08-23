@@ -250,6 +250,23 @@ pub struct Deployment {
     pub error_message: Option<String>,
 }
 
+/// One build or runtime event a provider recorded for a deployment.
+///
+/// Providers use different event names, so [`kind`](Self::kind) is preserved
+/// rather than forced into a small enum. The message is the provider's
+/// human-readable payload; it is not a request credential or environment
+/// variable value.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct DeploymentLog {
+    /// When the provider recorded the event, in milliseconds since the Unix epoch.
+    #[serde(default)]
+    pub created_at_ms: Option<u64>,
+    /// The provider's event kind, such as `stdout`, `stderr`, or `error`.
+    pub kind: String,
+    /// The event's human-readable message.
+    pub message: String,
+}
+
 /// An environment variable to set on a site.
 ///
 /// The value is write-only across this API: it goes out in a request and is

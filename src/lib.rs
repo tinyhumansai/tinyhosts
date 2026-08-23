@@ -66,8 +66,8 @@ pub use error::{Error, Result};
 pub use host::Host;
 pub use host::types::{
     AnalyticsBucket, AnalyticsDimension, AnalyticsQuery, AnalyticsSummary, Database, DatabaseKind,
-    DatabaseSpec, DeployRequest, Deployment, DeploymentStatus, DeploymentTarget, Domain, EnvVar,
-    EnvVarRecord, Framework, Site, SiteSpec,
+    DatabaseSpec, DeployRequest, Deployment, DeploymentLog, DeploymentStatus, DeploymentTarget,
+    Domain, EnvVar, EnvVarRecord, Framework, Site, SiteSpec,
 };
 pub use launch::launch;
 pub use launch::types::{Launch, LaunchPlan};
