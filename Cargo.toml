@@ -53,7 +53,7 @@ base64 = "0.22"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
 # Vercel identifies uploaded deployment files by their SHA-1 digest
 # (`x-vercel-digest`), so the digest algorithm is not a free choice.
-sha1 = { version = "0.10", optional = true }
+sha1 = { version = "0.11", optional = true }
 # Renders the SHA-1 digest as the lowercase hex string the upload header wants.
 hex = { version = "0.4", optional = true }
 # Percent-encodes an RPC-supplied identifier (site name, deployment id, domain)
