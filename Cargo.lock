@@ -1292,7 +1292,7 @@ name = "tinyhosts"
 version = "0.1.5"
 dependencies = [
  "async-trait",
- "base64 0.22.1",
+ "base64 0.23.1",
  "hex",
  "percent-encoding",
  "reqwest",
