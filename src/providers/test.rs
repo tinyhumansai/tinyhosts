@@ -3,8 +3,11 @@
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::collections::HashMap;
-use std::str::FromStr as _;
 
+// `FromStr` is NOT imported here: `use super::*` already brings the parent
+// module's own `use std::str::FromStr` into scope, so a second import is
+// redundant. Rust 1.98 started reporting it, and `-D warnings` turned that
+// report into a build failure — see the commit message.
 use super::*;
 
 fn lookup(pairs: &[(&str, &str)]) -> impl Fn(&str) -> Option<String> + use<> {
