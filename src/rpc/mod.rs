@@ -119,7 +119,7 @@ pub enum Operation {
         #[serde(default = "default_limit")]
         limit: u32,
     },
-    /// List a deployment's build and runtime events, oldest first.
+    /// List a deployment's build and deployment events, oldest first.
     DeploymentLogs {
         /// The deployment's identifier.
         id: String,
@@ -178,7 +178,7 @@ pub enum Outcome {
     Deployment(Deployment),
     /// Several deployments.
     Deployments(Vec<Deployment>),
-    /// A deployment's build and runtime events.
+    /// A deployment's build and deployment events.
     DeploymentLogs(Vec<DeploymentLog>),
     /// A site's environment variables, without their values.
     Env(Vec<EnvVarRecord>),

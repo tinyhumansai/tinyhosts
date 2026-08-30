@@ -20,3 +20,5 @@ code snippets when they remove ambiguity, but do not paste entire future files
 into the plan.
 
 See [`tinybus-module-release.md`](tinybus-module-release.md) for a worked example.
+The deployment-event capability is implemented under
+[`deployment-logs.md`](deployment-logs.md).

@@ -141,12 +141,10 @@ pub(super) struct Deployments {
     pub(super) deployments: Vec<DeploymentBody>,
 }
 
-/// The envelope returned by `GET /v3/deployments/{id}/events`.
-#[derive(Deserialize)]
-pub(super) struct DeploymentEvents {
-    #[serde(default)]
-    pub(super) events: Vec<DeploymentEvent>,
-}
+/// The nullable event array returned by `GET /v3/deployments/{id}/events`.
+///
+/// Vercel may also place `null` entries in the array.
+pub(super) type DeploymentEvents = Option<Vec<Option<DeploymentEvent>>>;
 
 /// One Vercel deployment event.
 #[derive(Deserialize)]

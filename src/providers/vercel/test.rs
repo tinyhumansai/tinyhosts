@@ -500,12 +500,11 @@ async fn deployment_events_preserve_their_kind_message_and_timestamp() {
         "GET",
         "/v3/deployments/dpl_1/events",
         200,
-        json!({
-            "events": [
-                {"created": 2_u64, "type": "stdout", "payload": "Building route /"},
-                {"created": 3_u64, "type": "error", "payload": {"code": "BUILD_FAILED"}}
-            ]
-        }),
+        json!([
+            {"created": 2_u64, "type": "stdout", "payload": "Building route /"},
+            null,
+            {"created": 3_u64, "type": "error", "payload": {"code": "BUILD_FAILED"}}
+        ]),
     )
     .await;
 
@@ -517,6 +516,21 @@ async fn deployment_events_preserve_their_kind_message_and_timestamp() {
     assert_eq!(logs[0].message, "Building route /");
     assert_eq!(logs[1].kind, "error");
     assert_eq!(logs[1].message, r#"{"code":"BUILD_FAILED"}"#);
+}
+
+#[tokio::test]
+async fn a_null_deployment_event_response_decodes_as_no_logs() {
+    let server = MockServer::start().await;
+    mount(
+        &server,
+        "GET",
+        "/v3/deployments/dpl_1/events",
+        200,
+        Value::Null,
+    )
+    .await;
+
+    assert!(host(&server).deployment_logs("dpl_1").await.unwrap().is_empty());
 }
 
 #[tokio::test]

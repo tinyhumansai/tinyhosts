@@ -441,8 +441,9 @@ impl Host for Vercel {
             .await?;
 
         Ok(events
-            .events
+            .unwrap_or_default()
             .into_iter()
+            .flatten()
             .map(self::wire::DeploymentEvent::into_log)
             .collect())
     }

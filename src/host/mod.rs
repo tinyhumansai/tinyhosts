@@ -134,7 +134,7 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// Returns a provider error.
     async fn list_deployments(&self, site: &str, limit: u32) -> Result<Vec<Deployment>>;
 
-    /// Lists the build and runtime events a deployment recorded, oldest first.
+    /// Lists the build and deployment events a provider recorded, oldest first.
     ///
     /// # Errors
     ///

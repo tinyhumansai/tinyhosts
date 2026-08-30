@@ -250,7 +250,7 @@ pub struct Deployment {
     pub error_message: Option<String>,
 }
 
-/// One build or runtime event a provider recorded for a deployment.
+/// One build or deployment event a provider recorded for a deployment.
 ///
 /// Providers use different event names, so [`kind`](Self::kind) is preserved
 /// rather than forced into a small enum. The message is the provider's
