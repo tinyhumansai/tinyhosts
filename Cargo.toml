@@ -47,7 +47,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # Bundle file contents travel as base64 in JSON: a byte array would triple the
 # size of every deployment payload crossing the bus.
-base64 = "0.22"
+base64 = "0.23"
 # Provider HTTP clients. rustls keeps the build free of a system OpenSSL, and
 # `json` covers every request body except the raw file upload.
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
