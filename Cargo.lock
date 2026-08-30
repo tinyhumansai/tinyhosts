@@ -1245,7 +1245,7 @@ dependencies = [
 
 [[package]]
 name = "tinybus"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "flate2",
@@ -1264,7 +1264,7 @@ dependencies = [
 
 [[package]]
 name = "tinybus-macros"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1273,7 +1273,7 @@ dependencies = [
 
 [[package]]
 name = "tinybus-module"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "serde",
@@ -1285,7 +1285,7 @@ dependencies = [
 
 [[package]]
 name = "tinyhosts"
-version = "0.1.5"
+version = "0.1.6"
 dependencies = [
  "async-trait",
  "base64 0.23.1",
