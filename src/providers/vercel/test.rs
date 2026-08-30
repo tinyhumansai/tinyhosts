@@ -530,7 +530,13 @@ async fn a_null_deployment_event_response_decodes_as_no_logs() {
     )
     .await;
 
-    assert!(host(&server).deployment_logs("dpl_1").await.unwrap().is_empty());
+    assert!(
+        host(&server)
+            .deployment_logs("dpl_1")
+            .await
+            .unwrap()
+            .is_empty()
+    );
 }
 
 #[tokio::test]
