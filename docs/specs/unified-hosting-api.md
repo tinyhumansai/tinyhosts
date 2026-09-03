@@ -31,6 +31,7 @@ the smallest vocabulary all of them can be said in.
 | Site | `Site` / `SiteSpec` | A named application on an account. |
 | Bundle | `Bundle` | The application's files, relative paths, contents in memory. |
 | Deployment | `Deployment` | One build of a bundle, with a URL and a status. |
+| Deployment log | `DeploymentLog` | One provider-recorded build or deployment event. |
 | Target | `DeploymentTarget` | `preview` or `production`. |
 | Environment | `EnvVar` / `EnvVarRecord` | A name and, outbound only, a value. |
 | Database | `DatabaseSpec` / `Database` | A managed store of a `DatabaseKind`. |
@@ -52,6 +53,10 @@ Four rules hold the model honest:
   created is discovered by an application whose `DATABASE_URL` is missing.
 - **A missing site is `Ok(None)`.** "Create it if it is not there" is the common
   path and must not be written by catching an error.
+- **Deployment logs preserve provider vocabulary.** `DeploymentLog::kind` is the
+  provider's event type and `message` its human-readable event payload. Entries
+  are oldest first. A provider without deployment-event retrieval returns
+  `Error::Unsupported`; runtime invocation logs are outside this capability.
 
 ## The order a launch runs in
 
@@ -96,6 +101,7 @@ account that has several that would match.
 | Domains | `POST /v10/projects/{id}/domains`, `GET /v9/projects/{id}/domains` |
 | Deploy | `POST /v2/files` per file, then `POST /v13/deployments` |
 | Deployment status | `GET /v13/deployments/{id}`, `GET /v7/deployments` |
+| Deployment events | `GET /v3/deployments/{id}/events` |
 | Promote | `POST /v10/projects/{projectId}/promote/{deploymentId}` |
 | Analytics | `GET /v1/query/web-analytics/visits/{count,aggregate}` |
 
@@ -110,6 +116,9 @@ Three details are Vercel's, and are the reason the adapter exists:
 - **Databases are marketplace resources.** Vercel runs none itself, which is why
   provisioning is a three-request search-and-create rather than one call, and why
   `Error::NoDatabaseProduct` exists.
+- **Deployment events are a nullable top-level array.** A `null` response means
+  no events, and `null` array entries are ignored. These are build and deployment
+  events, not post-deployment runtime invocation logs.
 
 ## Other providers
 

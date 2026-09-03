@@ -6,7 +6,7 @@ use crate::Error;
 use crate::bundle::Bundle;
 use crate::host::types::{
     AnalyticsDimension, AnalyticsQuery, DatabaseKind, DatabaseSpec, DeployRequest, Deployment,
-    DeploymentStatus, DeploymentTarget, EnvVar, Framework, SiteSpec,
+    DeploymentLog, DeploymentStatus, DeploymentTarget, EnvVar, Framework, SiteSpec,
 };
 
 fn bundle() -> Bundle {
@@ -245,6 +245,18 @@ fn a_deployment_round_trips_through_json() {
         serde_json::from_str::<Deployment>(&json).unwrap(),
         deployment
     );
+}
+
+#[test]
+fn a_deployment_log_round_trips_through_json() {
+    let log = DeploymentLog {
+        created_at_ms: Some(1),
+        kind: "stderr".to_owned(),
+        message: "missing module".to_owned(),
+    };
+
+    let json = serde_json::to_string(&log).unwrap();
+    assert_eq!(serde_json::from_str::<DeploymentLog>(&json).unwrap(), log);
 }
 
 #[test]
