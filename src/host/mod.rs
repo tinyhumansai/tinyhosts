@@ -23,8 +23,8 @@ use async_trait::async_trait;
 
 use crate::Result;
 use crate::host::types::{
-    AnalyticsQuery, AnalyticsSummary, Database, DatabaseSpec, DeployRequest, Deployment, Domain,
-    EnvVar, EnvVarRecord, Site, SiteSpec,
+    AnalyticsQuery, AnalyticsSummary, Database, DatabaseSpec, DeployRequest, Deployment,
+    DeploymentLog, Domain, EnvVar, EnvVarRecord, Site, SiteSpec,
 };
 use crate::providers::ProviderKind;
 
@@ -133,6 +133,26 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     ///
     /// Returns a provider error.
     async fn list_deployments(&self, site: &str, limit: u32) -> Result<Vec<Deployment>>;
+
+    /// Lists the build and deployment events a provider recorded, oldest first.
+    ///
+    /// The default refuses with [`Error::Unsupported`](crate::Error::Unsupported)
+    /// so a provider that records no events stays source-compatible and names
+    /// the missing capability instead of returning an empty list.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Unsupported`](crate::Error::Unsupported) when the
+    /// provider does not expose deployment events, or a provider error,
+    /// including [`Error::NotFound`](crate::Error::NotFound) for an unknown
+    /// deployment identifier.
+    async fn deployment_logs(&self, id: &str) -> Result<Vec<DeploymentLog>> {
+        let _ = id;
+        Err(crate::Error::Unsupported {
+            provider: self.kind().as_str().to_owned(),
+            capability: "read deployment logs".to_owned(),
+        })
+    }
 
     /// Points the site's production traffic at an existing deployment.
     ///

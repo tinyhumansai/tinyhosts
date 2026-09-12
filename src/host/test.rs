@@ -2,12 +2,15 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
-use crate::Error;
 use crate::bundle::Bundle;
+use crate::host::Host;
 use crate::host::types::{
-    AnalyticsDimension, AnalyticsQuery, DatabaseKind, DatabaseSpec, DeployRequest, Deployment,
-    DeploymentStatus, DeploymentTarget, EnvVar, Framework, SiteSpec,
+    AnalyticsDimension, AnalyticsQuery, AnalyticsSummary, Database, DatabaseKind, DatabaseSpec,
+    DeployRequest, Deployment, DeploymentLog, DeploymentStatus, DeploymentTarget, Domain, EnvVar,
+    EnvVarRecord, Framework, Site, SiteSpec,
 };
+use crate::providers::ProviderKind;
+use crate::{Error, Result};
 
 fn bundle() -> Bundle {
     let mut bundle = Bundle::new();
@@ -248,6 +251,18 @@ fn a_deployment_round_trips_through_json() {
 }
 
 #[test]
+fn a_deployment_log_round_trips_through_json() {
+    let log = DeploymentLog {
+        created_at_ms: Some(1),
+        kind: "stderr".to_owned(),
+        message: "missing module".to_owned(),
+    };
+
+    let json = serde_json::to_string(&log).unwrap();
+    assert_eq!(serde_json::from_str::<DeploymentLog>(&json).unwrap(), log);
+}
+
+#[test]
 fn a_status_this_crate_does_not_model_survives_a_round_trip() {
     let status = DeploymentStatus::Other("BLOCKED".to_owned());
     let json = serde_json::to_string(&status).unwrap();
@@ -255,5 +270,43 @@ fn a_status_this_crate_does_not_model_survives_a_round_trip() {
     assert_eq!(
         serde_json::from_str::<DeploymentStatus>(&json).unwrap(),
         status
+    );
+}
+
+/// A provider that implements only what the trait requires, so the default
+/// bodies are exercised through it. Nothing but the defaults is ever called.
+#[derive(Debug)]
+struct BareHost;
+
+#[rustfmt::skip]
+#[async_trait::async_trait]
+impl crate::host::Host for BareHost {
+    fn kind(&self) -> ProviderKind { ProviderKind::Vercel }
+    async fn create_site(&self, _: &SiteSpec) -> Result<Site> { unreachable!() }
+    async fn find_site(&self, _: &str) -> Result<Option<Site>> { unreachable!() }
+    async fn list_sites(&self, _: u32) -> Result<Vec<Site>> { unreachable!() }
+    async fn set_env(&self, _: &str, _: &[EnvVar]) -> Result<()> { unreachable!() }
+    async fn list_env(&self, _: &str) -> Result<Vec<EnvVarRecord>> { unreachable!() }
+    async fn provision_database(&self, _: &DatabaseSpec) -> Result<Database> { unreachable!() }
+    async fn attach_database(&self, _: &Database, _: &str) -> Result<Vec<String>> { unreachable!() }
+    async fn deploy(&self, _: &DeployRequest) -> Result<Deployment> { unreachable!() }
+    async fn deployment(&self, _: &str) -> Result<Deployment> { unreachable!() }
+    async fn list_deployments(&self, _: &str, _: u32) -> Result<Vec<Deployment>> { unreachable!() }
+    async fn promote(&self, _: &str, _: &str) -> Result<()> { unreachable!() }
+    async fn add_domain(&self, _: &str, _: &str) -> Result<Domain> { unreachable!() }
+    async fn list_domains(&self, _: &str) -> Result<Vec<Domain>> { unreachable!() }
+    async fn analytics(&self, _: &AnalyticsQuery) -> Result<AnalyticsSummary> { unreachable!() }
+}
+
+#[tokio::test]
+async fn deployment_logs_default_to_an_unsupported_capability() {
+    let error = BareHost.deployment_logs("dpl_1").await.unwrap_err();
+
+    assert_eq!(
+        error,
+        Error::Unsupported {
+            provider: "vercel".to_owned(),
+            capability: "read deployment logs".to_owned(),
+        }
     );
 }
