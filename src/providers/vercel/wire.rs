@@ -158,10 +158,16 @@ pub(super) struct DeploymentEvent {
 }
 
 impl DeploymentEvent {
-    /// Preserves a non-string payload as JSON rather than silently losing it.
+    /// Takes the human-readable `text` an stdout/stderr event object carries,
+    /// and preserves any other non-string payload as JSON rather than silently
+    /// losing it.
     pub(super) fn into_log(self) -> DeploymentLog {
         let message = match self.payload {
             Some(Value::String(message)) => message,
+            Some(Value::Object(mut fields)) => match fields.remove("text") {
+                Some(Value::String(text)) => text,
+                _ => Value::Object(fields).to_string(),
+            },
             Some(payload) => payload.to_string(),
             None => String::new(),
         };
