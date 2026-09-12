@@ -269,3 +269,82 @@ fn a_status_this_crate_does_not_model_survives_a_round_trip() {
         status
     );
 }
+
+/// A provider that implements only what the trait requires, so the default
+/// bodies are exercised through it.
+#[derive(Debug)]
+struct BareHost;
+
+#[async_trait::async_trait]
+impl crate::host::Host for BareHost {
+    fn kind(&self) -> crate::providers::ProviderKind {
+        crate::providers::ProviderKind::Vercel
+    }
+    async fn create_site(&self, _: &SiteSpec) -> crate::Result<crate::host::types::Site> {
+        unreachable!()
+    }
+    async fn find_site(&self, _: &str) -> crate::Result<Option<crate::host::types::Site>> {
+        unreachable!()
+    }
+    async fn list_sites(&self, _: u32) -> crate::Result<Vec<crate::host::types::Site>> {
+        unreachable!()
+    }
+    async fn set_env(&self, _: &str, _: &[EnvVar]) -> crate::Result<()> {
+        unreachable!()
+    }
+    async fn list_env(&self, _: &str) -> crate::Result<Vec<crate::host::types::EnvVarRecord>> {
+        unreachable!()
+    }
+    async fn provision_database(
+        &self,
+        _: &DatabaseSpec,
+    ) -> crate::Result<crate::host::types::Database> {
+        unreachable!()
+    }
+    async fn attach_database(
+        &self,
+        _: &crate::host::types::Database,
+        _: &str,
+    ) -> crate::Result<Vec<String>> {
+        unreachable!()
+    }
+    async fn deploy(&self, _: &DeployRequest) -> crate::Result<Deployment> {
+        unreachable!()
+    }
+    async fn deployment(&self, _: &str) -> crate::Result<Deployment> {
+        unreachable!()
+    }
+    async fn list_deployments(&self, _: &str, _: u32) -> crate::Result<Vec<Deployment>> {
+        unreachable!()
+    }
+    async fn promote(&self, _: &str, _: &str) -> crate::Result<()> {
+        unreachable!()
+    }
+    async fn add_domain(&self, _: &str, _: &str) -> crate::Result<crate::host::types::Domain> {
+        unreachable!()
+    }
+    async fn list_domains(&self, _: &str) -> crate::Result<Vec<crate::host::types::Domain>> {
+        unreachable!()
+    }
+    async fn analytics(
+        &self,
+        _: &AnalyticsQuery,
+    ) -> crate::Result<crate::host::types::AnalyticsSummary> {
+        unreachable!()
+    }
+}
+
+#[tokio::test]
+async fn deployment_logs_default_to_an_unsupported_capability() {
+    use crate::host::Host as _;
+
+    let error = BareHost.deployment_logs("dpl_1").await.unwrap_err();
+
+    assert_eq!(
+        error,
+        Error::Unsupported {
+            provider: "vercel".to_owned(),
+            capability: "read deployment logs".to_owned(),
+        }
+    );
+}
