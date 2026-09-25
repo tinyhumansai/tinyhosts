@@ -94,6 +94,7 @@ vercel = ["dep:reqwest", "dep:sha1", "dep:hex", "dep:percent-encoding"]
 # That is not only a smaller graph: OpenHuman vendors its own TinyBus, and two
 # path copies of one package cannot both be written to a lockfile.
 module = ["dep:tinybus", "dep:tinybus-module"]
+linked = ["module"]
 
 # Lints apply to the whole crate and to every target. CI runs clippy with
 # `-D warnings`, so anything set to "warn" here fails the build in CI.
