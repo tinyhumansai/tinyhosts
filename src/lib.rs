@@ -60,7 +60,7 @@ pub mod rpc;
 #[cfg(feature = "module")]
 mod tinybus_module;
 
-#[cfg(feature = "linked")]
+#[cfg(feature = "static-link")]
 pub use tinybus_module::linked_module;
 
 pub use bundle::{Bundle, EXCLUDED, SiteFile};
