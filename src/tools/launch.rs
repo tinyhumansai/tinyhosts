@@ -3,12 +3,12 @@
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use async_trait::async_trait;
-use serde_json::{json, Value};
 use crate::{Bundle, DatabaseKind, DatabaseSpec, EnvVar, Host, Launch, LaunchPlan, SiteSpec};
+use async_trait::async_trait;
+use serde_json::{Value, json};
 
-use super::{env_value, required_str};
 use super::resolve_in_workspace;
+use super::{env_value, required_str};
 use tinytools::{PermissionLevel, Tool, ToolCallOptions, ToolResult};
 
 /// Renders a launch as the two sentences a model needs: where it is, and what

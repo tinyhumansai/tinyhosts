@@ -2,9 +2,9 @@
 
 use std::sync::Arc;
 
-use async_trait::async_trait;
-use serde_json::{json, Value};
 use crate::{AnalyticsDimension, AnalyticsQuery, Host};
+use async_trait::async_trait;
+use serde_json::{Value, json};
 
 use super::required_str;
 use tinytools::{PermissionLevel, Tool, ToolResult};

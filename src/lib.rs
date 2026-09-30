@@ -56,6 +56,8 @@ pub mod host;
 pub mod launch;
 pub mod providers;
 pub mod rpc;
+#[cfg(feature = "tools")]
+pub mod tools;
 
 #[cfg(feature = "module")]
 mod tinybus_module;

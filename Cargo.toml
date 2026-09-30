@@ -61,6 +61,18 @@ hex = { version = "0.4", optional = true }
 # cannot redirect the request to a different route.
 percent-encoding = { version = "2", optional = true }
 
+# The agent tool vocabulary, for the optional `tools` feature (`tinyhosts::tools`).
+# A git source rather than a path on purpose, the same arrangement as
+# `tinymcp`'s `tools` feature: a host that already links tinytools through
+# another checkout redirects this one with a `[patch]` entry so both resolve to
+# one package and `tinytools::ToolResult` stays one type. Pinned to the revision
+# tinyagents vendors, which is the copy OpenHuman links.
+tinytools = { git = "https://github.com/tinyhumansai/tinytools", rev = "82c0d975e2667e1c525afe525006134431641785", optional = true }
+# `tinytools::Tool::execute` returns `anyhow::Result`.
+anyhow = { version = "1", optional = true }
+# The launch and rollback tools log the one outward call each makes.
+tracing = { version = "0.1", default-features = false, features = ["std"], optional = true }
+
 # The two module-verification examples load a compiled `cdylib` through TinyBus's
 # own loader, so they only build when the module is in the build.
 [[example]]
@@ -94,6 +106,10 @@ vercel = ["dep:reqwest", "dep:sha1", "dep:hex", "dep:percent-encoding"]
 # That is not only a smaller graph: OpenHuman vendors its own TinyBus, and two
 # path copies of one package cannot both be written to a lockfile.
 module = ["dep:tinybus", "dep:tinybus-module"]
+# The ten `hosting_*` agent tools as `tinytools::Tool`s over a `Host`
+# (`tinyhosts::tools`). Off by default so the loadable module does not link the
+# tool vocabulary; provider-independent, so it needs no `vercel`.
+tools = ["dep:tinytools", "dep:anyhow", "dep:tracing"]
 
 # Lints apply to the whole crate and to every target. CI runs clippy with
 # `-D warnings`, so anything set to "warn" here fails the build in CI.

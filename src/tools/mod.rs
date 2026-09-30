@@ -48,7 +48,10 @@ use tinytools::Tool;
 #[must_use]
 pub fn hosting_tools(host: &Arc<dyn Host>, workspace_dir: &Path) -> Vec<Box<dyn Tool>> {
     vec![
-        Box::new(LaunchSiteTool::new(Arc::clone(host), workspace_dir.to_path_buf())),
+        Box::new(LaunchSiteTool::new(
+            Arc::clone(host),
+            workspace_dir.to_path_buf(),
+        )),
         Box::new(DeploymentStatusTool::new(Arc::clone(host))),
         Box::new(ListDeploymentsTool::new(Arc::clone(host))),
         Box::new(DeploymentLogsTool::new(Arc::clone(host))),
