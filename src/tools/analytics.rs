@@ -71,7 +71,11 @@ impl Tool for AnalyticsTool {
             .unwrap_or(7)
             .clamp(1, 365);
 
-        let until_ms = chrono::Utc::now().timestamp_millis().max(0) as u64;
+        let until_ms = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |since| {
+                u64::try_from(since.as_millis()).unwrap_or(u64::MAX)
+            });
         let since_ms = until_ms.saturating_sub(days * 24 * 60 * 60 * 1000);
 
         let mut query = AnalyticsQuery::new(site, since_ms, until_ms);
