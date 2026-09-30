@@ -102,6 +102,14 @@ downstream that links the library directly takes
 graph, which is what OpenHuman does: it vendors its own TinyBus, and two path
 copies of one package cannot both be written to a lockfile.
 
+`tools` (off by default) adds `tinyhosts::tools`: the ten `hosting_*` agent tools
+as `tinytools::Tool`s over any `Host`, plus `resolve_in_workspace`, which
+decides which directory an agent may deploy. A host supplies the `Host` client
+and the workspace directory; whether to register the tools, and the approval
+gate in front of the four that change the world, stay with it. `tinytools` is a
+git dependency so a host that links another checkout of it can `[patch]` the two
+into one package.
+
 ## Adding a provider
 
 Implement `Host`, add a `ProviderKind` variant, and wire it into `connect_to`.
