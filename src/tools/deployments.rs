@@ -209,7 +209,7 @@ impl Tool for DeploymentLogsTool {
         let limit = args.get("limit").map_or(100, |value| {
             value
                 .as_i64()
-                .map(|value| value.clamp(1, 1000) as usize)
+                .map(|value| usize::try_from(value.clamp(1, 1000)).unwrap_or(1))
                 .or_else(|| value.as_u64().map(|value| value.clamp(1, 1000) as usize))
                 .unwrap_or(100)
         });
