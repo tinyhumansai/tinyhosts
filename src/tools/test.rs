@@ -105,7 +105,6 @@ async fn launching_without_a_site_name_is_refused_before_any_upload() {
 
 #[tokio::test]
 async fn a_read_tool_reports_a_missing_argument_rather_than_calling_out() {
-    let workspace = tempfile::tempdir().expect("tempdir");
     let host = offline_host();
 
     let result = DeploymentStatusTool::new(Arc::clone(&host))
@@ -120,7 +119,6 @@ async fn a_read_tool_reports_a_missing_argument_rather_than_calling_out() {
 
 #[tokio::test]
 async fn the_new_read_tools_report_a_missing_site_rather_than_calling_out() {
-    let workspace = tempfile::tempdir().expect("tempdir");
     let host = offline_host();
 
     let listed = ListDeploymentsTool::new(Arc::clone(&host))
@@ -138,7 +136,6 @@ async fn the_new_read_tools_report_a_missing_site_rather_than_calling_out() {
 
 #[tokio::test]
 async fn a_rollback_missing_either_argument_is_refused_before_any_call() {
-    let workspace = tempfile::tempdir().expect("tempdir");
     let host = offline_host();
 
     // A rollback names two things and neither can be guessed: repointing
@@ -500,7 +497,7 @@ async fn reading_logs_without_a_deployment_id_is_refused_before_any_call() {
 // ── The declarations a model sees ────────────────────────────────────────────
 
 /// Every tool's name, description, schema, permission and external-effect flag,
-/// as the OpenHuman host declared them before the tools moved here. A change
+/// as the `OpenHuman` host declared them before the tools moved here. A change
 /// to any of these changes a prompt, so it has to be a change to this file too.
 const DECLARATIONS: &str = include_str!("declarations.json");
 
