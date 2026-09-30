@@ -524,13 +524,6 @@ fn every_declaration_is_byte_identical_to_the_fixture() {
     let workspace = tempfile::tempdir().unwrap();
     let tools = hosting_tools(&offline_host(), workspace.path());
     let actual = declarations_of(&tools);
-    if std::env::var_os("TINYHOSTS_WRITE_DECLARATIONS").is_some() {
-        std::fs::write(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/src/tools/declarations.json"),
-            serde_json::to_string_pretty(&actual).unwrap() + "\n",
-        )
-        .unwrap();
-    }
     let expected: serde_json::Value = serde_json::from_str(DECLARATIONS).unwrap();
     assert_eq!(actual, expected);
     assert_eq!(expected.as_array().unwrap().len(), 10);

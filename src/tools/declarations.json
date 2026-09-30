@@ -1,1 +1,265 @@
-[]
+[
+  {
+    "description": "Deploy a directory in the workspace to a real hosting provider as a live website, optionally provisioning a managed database and wiring it in. Creates the site if it does not exist yet, so calling it again redeploys. Use for a Next.js application or a static site. The build starts immediately and finishes later: poll hosting_deployment_status with the returned deployment id until it is ready. Node dependencies, build output and .git are never uploaded — the provider builds from source.",
+    "external_effect": true,
+    "name": "hosting_launch_site",
+    "parameters_schema": {
+      "properties": {
+        "database": {
+          "description": "Name for a managed database to provision and connect. Omit if the site needs none. The connection variables are injected by the provider before the build.",
+          "type": "string"
+        },
+        "database_kind": {
+          "description": "What the database speaks. Defaults to postgres.",
+          "enum": [
+            "postgres",
+            "redis",
+            "blob"
+          ],
+          "type": "string"
+        },
+        "domains": {
+          "description": "Custom domains to attach. They need DNS records pointed at the provider before they serve traffic.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Environment variables to set before the build. Do not put a database connection string here; the provider injects its own.",
+          "type": "object"
+        },
+        "path": {
+          "description": "Directory to deploy, relative to the workspace. Defaults to the workspace root.",
+          "type": "string"
+        },
+        "production": {
+          "description": "Deploy to production rather than to a preview URL. Defaults to false.",
+          "type": "boolean"
+        },
+        "site": {
+          "description": "The site's name on the provider, e.g. 'acme-shop'. Reused on a redeploy.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site"
+      ],
+      "type": "object"
+    },
+    "permission_level": "Write"
+  },
+  {
+    "description": "Check whether a deployment has finished building and is serving. Poll this after hosting_launch_site until the status is ready, failed, or canceled. A failed deployment reports the provider's build error.",
+    "external_effect": false,
+    "name": "hosting_deployment_status",
+    "parameters_schema": {
+      "properties": {
+        "deployment_id": {
+          "description": "The id hosting_launch_site returned.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "deployment_id"
+      ],
+      "type": "object"
+    },
+    "permission_level": "ReadOnly"
+  },
+  {
+    "description": "List a site's recent deployments, newest first, with their status, target and creation time. Use it to find the deployment id of a known good version before rolling back to it, or to see the history of what has been shipped. Each entry's id is what hosting_rollback and hosting_deployment_status take.",
+    "external_effect": false,
+    "name": "hosting_list_deployments",
+    "parameters_schema": {
+      "properties": {
+        "limit": {
+          "description": "How many to return. Defaults to 20.",
+          "type": "integer"
+        },
+        "site": {
+          "description": "The site's name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site"
+      ],
+      "type": "object"
+    },
+    "permission_level": "ReadOnly"
+  },
+  {
+    "description": "Read a deployment's build and runtime log events, oldest first. Use it after hosting_deployment_status reports a failed deployment to find the error that caused it. Takes the same deployment id as hosting_deployment_status.",
+    "external_effect": false,
+    "name": "hosting_deployment_logs",
+    "parameters_schema": {
+      "properties": {
+        "deployment_id": {
+          "description": "The id hosting_launch_site returned, or one from hosting_list_deployments.",
+          "type": "string"
+        },
+        "limit": {
+          "description": "How many of the most recent events to return. Defaults to 100.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "deployment_id"
+      ],
+      "type": "object"
+    },
+    "permission_level": "ReadOnly"
+  },
+  {
+    "description": "Roll a site back by pointing its production traffic at an earlier deployment that already built successfully. Use it when a deploy broke a live site: this is the recovery path. It does not rebuild anything — the deployment being promoted was built when it was first deployed, which is why it is the fast way back. Get the id from hosting_list_deployments; only a deployment that finished building can be promoted.",
+    "external_effect": true,
+    "name": "hosting_rollback",
+    "parameters_schema": {
+      "properties": {
+        "deployment_id": {
+          "description": "The deployment to serve, from hosting_list_deployments. It must have finished building.",
+          "type": "string"
+        },
+        "site": {
+          "description": "The site whose production traffic moves.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site",
+        "deployment_id"
+      ],
+      "type": "object"
+    },
+    "permission_level": "Write"
+  },
+  {
+    "description": "List the sites already on the hosting account, newest first. Use it to find out whether a site exists before deploying, or to recover a name.",
+    "external_effect": false,
+    "name": "hosting_list_sites",
+    "parameters_schema": {
+      "properties": {
+        "limit": {
+          "description": "How many to return. Defaults to 20.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "permission_level": "ReadOnly"
+  },
+  {
+    "description": "Set environment variables on a site, replacing any of the same name. The site must be redeployed afterwards for a build-time variable to take effect. Values are write-only: they can never be read back through these tools.",
+    "external_effect": true,
+    "name": "hosting_set_env",
+    "parameters_schema": {
+      "properties": {
+        "env": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Variables to set.",
+          "type": "object"
+        },
+        "production_only": {
+          "description": "Apply to production only rather than every environment.",
+          "type": "boolean"
+        },
+        "secret": {
+          "description": "Store them write-only at the provider. Defaults to false.",
+          "type": "boolean"
+        },
+        "site": {
+          "description": "The site's name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site",
+        "env"
+      ],
+      "type": "object"
+    },
+    "permission_level": "Write"
+  },
+  {
+    "description": "Attach a custom domain to a site. The domain does not serve traffic until its DNS records point at the provider, which the user has to do at their registrar — the response says whether the provider has verified it yet.",
+    "external_effect": true,
+    "name": "hosting_add_domain",
+    "parameters_schema": {
+      "properties": {
+        "domain": {
+          "description": "e.g. 'shop.example.com'.",
+          "type": "string"
+        },
+        "site": {
+          "description": "The site's name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site",
+        "domain"
+      ],
+      "type": "object"
+    },
+    "permission_level": "Write"
+  },
+  {
+    "description": "List the custom domains attached to a site and whether the provider has verified each one. A domain that is attached but unverified is not serving traffic yet — its DNS records still have to point at the provider, which the user does at their registrar. Use it to check whether a domain added earlier has come up.",
+    "external_effect": false,
+    "name": "hosting_domain_status",
+    "parameters_schema": {
+      "properties": {
+        "site": {
+          "description": "The site's name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site"
+      ],
+      "type": "object"
+    },
+    "permission_level": "ReadOnly"
+  },
+  {
+    "description": "Report how much traffic a hosted site served over the last N days — visitors and page views, optionally broken down by country, path, device, browser, or referrer.",
+    "external_effect": false,
+    "name": "hosting_analytics",
+    "parameters_schema": {
+      "properties": {
+        "breakdown": {
+          "description": "Break the totals down by this dimension.",
+          "enum": [
+            "country",
+            "request_path",
+            "device_type",
+            "browser_name",
+            "os_name",
+            "referrer_hostname",
+            "route"
+          ],
+          "type": "string"
+        },
+        "days": {
+          "description": "How many days back to report. Defaults to 7.",
+          "type": "integer"
+        },
+        "site": {
+          "description": "The site's name.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "site"
+      ],
+      "type": "object"
+    },
+    "permission_level": "ReadOnly"
+  }
+]
