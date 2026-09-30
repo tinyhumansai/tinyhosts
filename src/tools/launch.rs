@@ -77,6 +77,7 @@ fn describe(launch: &Launch) -> String {
 // ── hosting_launch_site ─────────────────────────────────────────────────────
 
 /// Deploys a workspace directory as a live site, with an optional database.
+#[derive(Debug)]
 pub struct LaunchSiteTool {
     host: Arc<dyn Host>,
     workspace_dir: PathBuf,

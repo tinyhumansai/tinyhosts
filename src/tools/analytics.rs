@@ -12,11 +12,14 @@ use tinytools::{PermissionLevel, Tool, ToolResult};
 // ── hosting_analytics ───────────────────────────────────────────────────────
 
 /// Reports the traffic a site served.
+#[derive(Debug)]
 pub struct AnalyticsTool {
     host: Arc<dyn Host>,
 }
 
 impl AnalyticsTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }

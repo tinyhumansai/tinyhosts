@@ -12,11 +12,14 @@ use tinytools::{PermissionLevel, Tool, ToolResult};
 // ── hosting_add_domain ──────────────────────────────────────────────────────
 
 /// Attaches a custom domain to a site.
+#[derive(Debug)]
 pub struct AddDomainTool {
     host: Arc<dyn Host>,
 }
 
 impl AddDomainTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }
@@ -89,11 +92,14 @@ impl Tool for AddDomainTool {
 /// job: it does not serve traffic until its DNS records point at the provider,
 /// which the user has to do at their registrar, and until now nothing could
 /// answer "did that work?" without attaching it again.
+#[derive(Debug)]
 pub struct DomainStatusTool {
     host: Arc<dyn Host>,
 }
 
 impl DomainStatusTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }

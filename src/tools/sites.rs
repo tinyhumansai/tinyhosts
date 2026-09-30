@@ -12,11 +12,14 @@ use tinytools::{PermissionLevel, Tool, ToolResult};
 // ── hosting_list_sites ──────────────────────────────────────────────────────
 
 /// Lists the sites on the account.
+#[derive(Debug)]
 pub struct ListSitesTool {
     host: Arc<dyn Host>,
 }
 
 impl ListSitesTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }
@@ -66,11 +69,14 @@ impl Tool for ListSitesTool {
 // ── hosting_set_env ─────────────────────────────────────────────────────────
 
 /// Sets environment variables on an existing site.
+#[derive(Debug)]
 pub struct SetEnvTool {
     host: Arc<dyn Host>,
 }
 
 impl SetEnvTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }

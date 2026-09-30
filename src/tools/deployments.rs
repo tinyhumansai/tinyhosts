@@ -12,11 +12,14 @@ use tinytools::{PermissionLevel, Tool, ToolResult};
 // ── hosting_deployment_status ───────────────────────────────────────────────
 
 /// Reads one deployment's current state.
+#[derive(Debug)]
 pub struct DeploymentStatusTool {
     host: Arc<dyn Host>,
 }
 
 impl DeploymentStatusTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }
@@ -74,11 +77,14 @@ impl Tool for DeploymentStatusTool {
 /// to promote, and before this tool nothing returned one except the launch that
 /// created it. An agent that wanted to go back to the deployment *before* the
 /// bad one had no way to name it.
+#[derive(Debug)]
 pub struct ListDeploymentsTool {
     host: Arc<dyn Host>,
 }
 
 impl ListDeploymentsTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }
@@ -146,11 +152,14 @@ impl Tool for ListDeploymentsTool {
 /// failed and carries the provider's one-line error; this one is how an agent
 /// finds out *why*, which is the difference between reporting a broken deploy
 /// and fixing it.
+#[derive(Debug)]
 pub struct DeploymentLogsTool {
     host: Arc<dyn Host>,
 }
 
 impl DeploymentLogsTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }
@@ -228,11 +237,14 @@ impl Tool for DeploymentLogsTool {
 // ── hosting_rollback ────────────────────────────────────────────────────────
 
 /// Points a site's production traffic back at an earlier deployment.
+#[derive(Debug)]
 pub struct RollbackTool {
     host: Arc<dyn Host>,
 }
 
 impl RollbackTool {
+    /// A tool over `host`.
+    #[must_use]
     pub fn new(host: Arc<dyn Host>) -> Self {
         Self { host }
     }

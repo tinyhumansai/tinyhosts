@@ -22,6 +22,10 @@
 //! an agent reaches for it. Without it an agent can deploy a broken site and
 //! have no way back, which is the whole argument for the tool existing.
 
+// Tool names and descriptions are fixed strings; tying them to `&self` is what the
+// `Tool` trait's signature asks for.
+#![allow(clippy::unnecessary_literal_bound)]
+
 mod analytics;
 mod deployments;
 mod domains;
