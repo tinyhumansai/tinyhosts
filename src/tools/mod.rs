@@ -128,3 +128,6 @@ pub fn resolve_in_workspace(workspace_dir: &Path, relative: &str) -> anyhow::Res
 
     Ok(canonical)
 }
+
+#[cfg(all(test, feature = "vercel"))]
+mod test;
