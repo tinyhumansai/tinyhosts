@@ -549,3 +549,246 @@ fn the_tools_come_in_a_stable_order() {
         ]
     );
 }
+
+// ── What `hosting_launch_site` asks for and what it tells the model ──────────
+
+/// A launch as a provider would report it, from the JSON the crate serializes.
+fn launch_from(value: serde_json::Value) -> crate::Launch {
+    serde_json::from_value(value).expect("a launch")
+}
+
+#[test]
+fn a_launch_without_a_url_says_to_poll_for_one() {
+    let launch = launch_from(json!({
+        "site": {"id": "prj_1", "name": "shop"},
+        "created_site": true,
+        "deployment": {"id": "dpl_1", "site": "shop", "status": "queued"}
+    }));
+
+    let text = launch::describe(&launch);
+
+    assert!(text.contains("**shop** (created)"), "{text}");
+    assert!(text.contains("has not assigned a URL yet"), "{text}");
+    assert!(!text.contains("Database"), "{text}");
+}
+
+#[test]
+fn a_launch_names_its_url_database_and_unverified_domains() {
+    let launch = launch_from(json!({
+        "site": {"id": "prj_1", "name": "shop"},
+        "created_site": false,
+        "database": {
+            "id": "db_1", "name": "shop-db", "kind": "postgres", "status": "available"
+        },
+        "database_env_keys": ["DATABASE_URL", "PGHOST"],
+        "domains": [
+            {"name": "shop.example", "site": "shop", "verified": true},
+            {"name": "www.shop.example", "site": "shop", "verified": false}
+        ],
+        "deployment": {
+            "id": "dpl_1", "site": "shop", "url": "https://shop.example.app", "status": "building"
+        }
+    }));
+
+    let text = launch::describe(&launch);
+
+    assert!(text.contains("(already existed)"), "{text}");
+    assert!(text.contains("https://shop.example.app"), "{text}");
+    assert!(text.contains("**shop-db** (postgres)"), "{text}");
+    assert!(text.contains("DATABASE_URL, PGHOST"), "{text}");
+    assert!(text.contains(": www.shop.example."), "{text}");
+}
+
+#[test]
+fn a_launch_with_a_bare_database_and_verified_domains_says_so() {
+    let launch = launch_from(json!({
+        "site": {"id": "prj_1", "name": "shop"},
+        "created_site": true,
+        "database": {"id": "db_1", "name": "cache", "kind": "redis", "status": "available"},
+        "domains": [{"name": "shop.example", "site": "shop", "verified": true}],
+        "deployment": {"id": "dpl_1", "site": "shop", "status": "ready"}
+    }));
+
+    let text = launch::describe(&launch);
+
+    assert!(text.contains("injected no variables"), "{text}");
+    assert!(text.contains("Every domain is verified."), "{text}");
+}
+
+#[test]
+fn every_launch_argument_reaches_the_plan() {
+    let workspace = tempfile::tempdir().expect("tempdir");
+    std::fs::write(workspace.path().join("package.json"), b"{}").expect("write");
+    let tool = LaunchSiteTool::new(offline_host(), workspace.path().to_path_buf());
+
+    let plan = tool
+        .plan(&json!({
+            "site": "shop",
+            "database": " shop-db ",
+            "database_kind": "redis",
+            "env": {"API": "x", "PORT": 3000, "DEBUG": true},
+            "domains": ["shop.example", "  ", 7],
+            "production": true
+        }))
+        .expect("a plan");
+
+    assert_eq!(plan.site.name, "shop");
+    let database = plan.database.expect("a database");
+    assert_eq!(database.name, "shop-db");
+    assert_eq!(database.kind, crate::DatabaseKind::Redis);
+    let env: Vec<(&str, &str)> = plan
+        .env
+        .iter()
+        .map(|var| (var.key.as_str(), var.value.as_str()))
+        .collect();
+    assert_eq!(env, [("API", "x"), ("DEBUG", "true"), ("PORT", "3000")]);
+    assert_eq!(plan.domains, ["shop.example"]);
+    assert_eq!(plan.target, crate::DeploymentTarget::Production);
+}
+
+#[test]
+fn the_database_kind_defaults_to_postgres_and_keeps_an_unknown_one() {
+    let workspace = tempfile::tempdir().expect("tempdir");
+    std::fs::write(workspace.path().join("package.json"), b"{}").expect("write");
+    let tool = LaunchSiteTool::new(offline_host(), workspace.path().to_path_buf());
+
+    for (kind, expected) in [
+        (None, crate::DatabaseKind::Postgres),
+        (Some("postgres"), crate::DatabaseKind::Postgres),
+        (Some("blob"), crate::DatabaseKind::Blob),
+        (Some("mongo"), crate::DatabaseKind::Other("mongo".to_string())),
+    ] {
+        let mut args = json!({"site": "shop", "database": "db"});
+        if let Some(kind) = kind {
+            args["database_kind"] = json!(kind);
+        }
+        let plan = tool.plan(&args).expect("a plan");
+        assert_eq!(plan.database.expect("a database").kind, expected);
+    }
+
+    let plan = tool
+        .plan(&json!({"site": "shop", "database": "  "}))
+        .expect("a plan");
+    assert!(plan.database.is_none(), "a blank name provisions nothing");
+    assert_eq!(plan.target, crate::DeploymentTarget::Preview);
+}
+
+#[tokio::test]
+async fn a_launch_env_value_that_is_not_a_scalar_is_refused() {
+    let workspace = tempfile::tempdir().expect("tempdir");
+    std::fs::write(workspace.path().join("package.json"), b"{}").expect("write");
+    let tool = LaunchSiteTool::new(offline_host(), workspace.path().to_path_buf());
+
+    for value in [json!(null), json!({"nested": 1}), json!([1])] {
+        let result = tool
+            .execute(json!({"site": "shop", "env": {"KEY": value}}))
+            .await
+            .expect("the tool reports rather than panics");
+        assert!(result.is_error, "{value} should have been refused");
+    }
+}
+
+#[tokio::test]
+async fn a_launch_the_provider_rejects_is_reported_as_an_error() {
+    let server = MockServer::start().await;
+    let workspace = tempfile::tempdir().expect("tempdir");
+    std::fs::write(workspace.path().join("package.json"), b"{}").expect("write");
+
+    let result = LaunchSiteTool::new(host_against(&server), workspace.path().to_path_buf())
+        .execute(json!({"site": "shop"}))
+        .await
+        .expect("the tool reports rather than panics");
+
+    assert!(result.is_error);
+}
+
+// ── Analytics, sites and environment, against a mock of the provider ─────────
+
+#[tokio::test]
+async fn analytics_refuses_a_missing_site_and_an_unknown_breakdown() {
+    let host = offline_host();
+
+    let missing = AnalyticsTool::new(Arc::clone(&host))
+        .execute(json!({}))
+        .await
+        .expect("the tool reports rather than panics");
+    assert!(missing.is_error);
+
+    let unknown = AnalyticsTool::new(host)
+        .execute(json!({"site": "shop", "breakdown": "planet"}))
+        .await
+        .expect("the tool reports rather than panics");
+    assert!(unknown.is_error);
+}
+
+#[tokio::test]
+async fn analytics_reports_a_provider_failure_for_every_breakdown() {
+    let server = MockServer::start().await;
+    let host = host_against(&server);
+
+    for breakdown in [
+        None,
+        Some("country"),
+        Some("request_path"),
+        Some("device_type"),
+        Some("browser_name"),
+        Some("os_name"),
+        Some("referrer_hostname"),
+        Some("route"),
+    ] {
+        let mut args = json!({"site": "shop", "days": 400});
+        if let Some(breakdown) = breakdown {
+            args["breakdown"] = json!(breakdown);
+        }
+        let result = AnalyticsTool::new(Arc::clone(&host))
+            .execute(args)
+            .await
+            .expect("the tool reports rather than panics");
+        assert!(result.is_error, "{breakdown:?}: the mock knows no route");
+    }
+}
+
+#[tokio::test]
+async fn listing_sites_reports_a_provider_failure() {
+    let server = MockServer::start().await;
+
+    let result = ListSitesTool::new(host_against(&server))
+        .execute(json!({"limit": 500}))
+        .await
+        .expect("the tool reports rather than panics");
+
+    assert!(result.is_error);
+}
+
+#[tokio::test]
+async fn setting_env_refuses_bad_arguments_before_any_call() {
+    let host = offline_host();
+
+    for args in [
+        json!({"env": {"A": "1"}}),
+        json!({"site": "shop"}),
+        json!({"site": "shop", "env": {"A": null}}),
+    ] {
+        let result = SetEnvTool::new(Arc::clone(&host))
+            .execute(args.clone())
+            .await
+            .expect("the tool reports rather than panics");
+        assert!(result.is_error, "{args} should have been refused");
+    }
+}
+
+#[tokio::test]
+async fn setting_env_reports_a_provider_failure() {
+    let server = MockServer::start().await;
+
+    for args in [
+        json!({"site": "shop", "env": {"A": "1", "B": 2}}),
+        json!({"site": "shop", "env": {"A": "1"}, "secret": true, "production_only": true}),
+    ] {
+        let result = SetEnvTool::new(host_against(&server))
+            .execute(args)
+            .await
+            .expect("the tool reports rather than panics");
+        assert!(result.is_error);
+    }
+}
