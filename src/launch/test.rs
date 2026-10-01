@@ -211,8 +211,8 @@ async fn an_existing_site_is_reused_rather_than_recreated() {
 
     assert!(!result.created_site);
     assert!(result.database.is_none());
-    assert!(result.database_env_keys.is_empty());
-    assert!(result.domains.is_empty());
+    assert_eq!(result.database_env_keys.len(), 0);
+    assert_eq!(result.domains.len(), 0);
     assert_eq!(result.url(), None);
 
     let routes: Vec<String> = server
@@ -266,8 +266,8 @@ fn a_plan_defaults_to_a_preview_with_nothing_attached() {
 
     assert_eq!(plan.target, DeploymentTarget::Preview);
     assert!(plan.database.is_none());
-    assert!(plan.env.is_empty());
-    assert!(plan.domains.is_empty());
+    assert_eq!(plan.env.len(), 0);
+    assert_eq!(plan.domains.len(), 0);
     assert!(plan.validate().is_ok());
 }
 

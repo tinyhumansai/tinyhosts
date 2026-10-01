@@ -96,7 +96,7 @@ fn reading_the_process_environment_either_finds_a_key_or_says_so() {
     // The test suite must not depend on the machine it runs on: either outcome
     // is correct here, and running the call is what exercises the lookup.
     match ProviderKind::Vercel.credentials_from_env() {
-        Ok(credentials) => assert!(!credentials.api_key().is_empty()),
+        Ok(credentials) => assert_ne!(credentials.api_key().len(), 0),
         Err(error) => assert!(matches!(error, Error::MissingApiKey { .. })),
     }
 }
