@@ -71,7 +71,7 @@ fn an_empty_bundle_reports_itself_empty() {
     assert!(bundle.is_empty());
     assert_eq!(bundle.len(), 0);
     assert_eq!(bundle.total_bytes(), 0);
-    assert!(bundle.files().is_empty());
+    assert_eq!(bundle.files().len(), 0);
 }
 
 #[test]
@@ -193,7 +193,7 @@ fn deserializing_rejects_contents_that_are_not_base64() {
     let error = serde_json::from_str::<Bundle>(r#"[{"path":"a.txt","contents":"not base64!"}]"#)
         .unwrap_err();
 
-    assert!(!error.to_string().is_empty());
+    assert_ne!(error.to_string().len(), 0);
 }
 
 #[test]

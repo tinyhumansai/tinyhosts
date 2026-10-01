@@ -175,7 +175,7 @@ async fn an_empty_project_list_decodes() {
     let server = MockServer::start().await;
     mount(&server, "GET", "/v10/projects", 200, json!({})).await;
 
-    assert!(host(&server).list_sites(5).await.unwrap().is_empty());
+    assert_eq!(host(&server).list_sites(5).await.unwrap().len(), 0);
 }
 
 #[tokio::test]
@@ -263,7 +263,7 @@ async fn lists_environment_variables_without_their_values() {
     assert_eq!(vars[1].targets, vec![DeploymentTarget::Production]);
     assert!(vars[1].secret);
     assert_eq!(vars[2].id, "");
-    assert!(vars[2].targets.is_empty());
+    assert_eq!(vars[2].targets.len(), 0);
 
     let rendered = serde_json::to_string(&vars).unwrap();
     assert!(!rendered.contains("leaked?"), "{rendered}");
@@ -483,12 +483,13 @@ async fn an_empty_deployment_list_decodes() {
     let server = MockServer::start().await;
     mount(&server, "GET", "/v7/deployments", 200, json!({})).await;
 
-    assert!(
+    assert_eq!(
         host(&server)
             .list_deployments("shop", 1)
             .await
             .unwrap()
-            .is_empty()
+            .len(),
+        0
     );
 }
 
@@ -533,12 +534,9 @@ async fn a_null_deployment_event_response_decodes_as_no_logs() {
     )
     .await;
 
-    assert!(
-        host(&server)
-            .deployment_logs("dpl_1")
-            .await
-            .unwrap()
-            .is_empty()
+    assert_eq!(
+        host(&server).deployment_logs("dpl_1").await.unwrap().len(),
+        0
     );
 }
 
@@ -957,7 +955,7 @@ async fn reports_traffic_totals() {
     assert_eq!(summary.pageviews, Some(40));
     assert_eq!(summary.since_ms, 1000);
     assert_eq!(summary.until_ms, 2000);
-    assert!(summary.breakdown.is_empty());
+    assert_eq!(summary.breakdown.len(), 0);
 }
 
 #[tokio::test]
@@ -1030,7 +1028,7 @@ async fn a_breakdown_that_is_not_a_list_is_no_breakdown() {
         .await
         .unwrap();
 
-    assert!(summary.breakdown.is_empty());
+    assert_eq!(summary.breakdown.len(), 0);
 }
 
 #[tokio::test]
@@ -1175,7 +1173,7 @@ async fn a_team_scope_is_applied_to_every_request() {
     )
     .unwrap();
 
-    assert!(host.list_sites(1).await.unwrap().is_empty());
+    assert_eq!(host.list_sites(1).await.unwrap().len(), 0);
 }
 
 #[test]
