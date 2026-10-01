@@ -13,7 +13,7 @@ use tinytools::{PermissionLevel, Tool, ToolCallOptions, ToolResult};
 
 /// Renders a launch as the two sentences a model needs: where it is, and what
 /// it still has to wait for.
-fn describe(launch: &Launch) -> String {
+pub(super) fn describe(launch: &Launch) -> String {
     let mut lines = vec![format!(
         "Site **{}** ({}), deployment `{}` is {:?}.",
         launch.site.name,
@@ -94,7 +94,7 @@ impl LaunchSiteTool {
     }
 
     /// Builds the plan an invocation describes.
-    fn plan(&self, args: &Value) -> anyhow::Result<LaunchPlan> {
+    pub(super) fn plan(&self, args: &Value) -> anyhow::Result<LaunchPlan> {
         let site = required_str(args, "site")?;
         let path = args
             .get("path")
