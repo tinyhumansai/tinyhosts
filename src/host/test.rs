@@ -110,7 +110,7 @@ fn only_a_settled_status_is_terminal() {
 fn an_env_var_applies_everywhere_by_default() {
     let var = EnvVar::new("DATABASE_URL", "postgres://");
 
-    assert!(var.targets.is_empty());
+    assert_eq!(var.targets.len(), 0);
     assert!(!var.secret);
     assert!(var.validate().is_ok());
 }
