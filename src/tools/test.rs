@@ -656,7 +656,10 @@ fn the_database_kind_defaults_to_postgres_and_keeps_an_unknown_one() {
         (None, crate::DatabaseKind::Postgres),
         (Some("postgres"), crate::DatabaseKind::Postgres),
         (Some("blob"), crate::DatabaseKind::Blob),
-        (Some("mongo"), crate::DatabaseKind::Other("mongo".to_string())),
+        (
+            Some("mongo"),
+            crate::DatabaseKind::Other("mongo".to_string()),
+        ),
     ] {
         let mut args = json!({"site": "shop", "database": "db"});
         if let Some(kind) = kind {
