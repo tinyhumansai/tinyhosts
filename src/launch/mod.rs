@@ -93,4 +93,5 @@ pub async fn launch(host: &dyn Host, plan: &LaunchPlan) -> Result<Launch> {
 }
 
 #[cfg(test)]
+#[path = "mod_tests.rs"]
 mod test;

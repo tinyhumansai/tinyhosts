@@ -130,4 +130,5 @@ pub fn resolve_in_workspace(workspace_dir: &Path, relative: &str) -> anyhow::Res
 }
 
 #[cfg(all(test, feature = "vercel"))]
+#[path = "mod_tests.rs"]
 mod test;

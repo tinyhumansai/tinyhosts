@@ -329,4 +329,5 @@ mod base64_bytes {
 }
 
 #[cfg(test)]
+#[path = "mod_tests.rs"]
 mod test;
