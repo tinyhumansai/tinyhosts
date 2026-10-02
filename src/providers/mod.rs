@@ -217,4 +217,5 @@ pub fn connect_from_env(kind: ProviderKind) -> Result<Box<dyn Host>> {
 }
 
 #[cfg(test)]
+#[path = "mod_tests.rs"]
 mod test;

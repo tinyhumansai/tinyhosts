@@ -283,4 +283,5 @@ pub fn providers() -> Vec<&'static str> {
 }
 
 #[cfg(test)]
+#[path = "mod_tests.rs"]
 mod test;

@@ -622,4 +622,5 @@ fn buckets(dimension: &str, data: &Value) -> Vec<AnalyticsBucket> {
 }
 
 #[cfg(test)]
+#[path = "mod_tests.rs"]
 mod test;
