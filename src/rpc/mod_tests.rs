@@ -537,15 +537,6 @@ async fn supplied_deployment_credentials_are_refused_before_provider_dispatch() 
 }
 
 #[tokio::test]
-async fn oversized_execute_json_is_refused_before_deserialization() {
-    let request = " ".repeat(tinyhosts_bus::preparation::MAX_RPC_REQUEST_BYTES + 1);
-    assert!(matches!(
-        execute_json(&request).await,
-        Err(Error::RequestLimit { .. })
-    ));
-}
-
-#[tokio::test]
 async fn supplied_launch_credentials_are_refused_before_site_lookup() {
     let server = MockServer::start().await;
     let request = json!({ "operation":"launch", "credentials":{"api_key":"fixture"}, "base_url":server.uri(),
@@ -555,4 +546,49 @@ async fn supplied_launch_credentials_are_refused_before_site_lookup() {
         Err(Error::InvalidBundlePath { .. })
     ));
     assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn legacy_launch_and_deploy_accept_large_bundles_within_transport_budget() {
+    use base64::Engine as _;
+    let server = MockServer::start().await;
+    let source = vec![b'x'; 6 * 1024 * 1024];
+    Mock::given(method("POST"))
+        .and(path("/v2/files"))
+        .and(wiremock::matchers::body_bytes(source.clone()))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({})))
+        .expect(2)
+        .mount(&server)
+        .await;
+    mount(
+        &server,
+        "GET",
+        "/v9/projects/shop",
+        200,
+        json!({"id":"site","name":"shop"}),
+    )
+    .await;
+    mount(
+        &server,
+        "POST",
+        "/v13/deployments",
+        200,
+        json!({"id":"large-deploy","readyState":"READY"}),
+    )
+    .await;
+    let bundle = json!([{"path":"index.html", "contents":base64::engine::general_purpose::STANDARD.encode(source)}]);
+    for operation in [
+        json!({"operation":"deploy", "request":{"site":"shop", "bundle":bundle}}),
+        json!({"operation":"launch", "plan":{"site":{"name":"shop"}, "bundle":bundle}}),
+    ] {
+        let mut request = operation;
+        request["credentials"] = json!({"api_key":"fixture"});
+        request["base_url"] = json!(server.uri());
+        let request = request.to_string();
+        assert!(request.len() > 7 * 1024 * 1024);
+        assert!(serde_json::to_vec(&request).unwrap().len() < 16 * 1024 * 1024 - 1024);
+        let result = execute_json(&request).await.unwrap();
+        assert!(result.contains("large-deploy"));
+    }
+    server.verify().await;
 }

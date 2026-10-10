@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 pub const MAX_PREPARATION_BYTES: u64 = 4 * 1024 * 1024;
 /// Conservative JSON snapshot budget, before nested Execute string escaping.
 pub const MAX_PREPARATION_JSON_BYTES: usize = 6 * 1024 * 1024;
-/// Maximum Execute request JSON bytes, leaving frame headroom after escaping.
-pub const MAX_RPC_REQUEST_BYTES: usize = 7 * 1024 * 1024;
 /// Maximum regular files collected by one preparation operation.
 pub const MAX_PREPARATION_FILES: u32 = 4096;
 /// Maximum filesystem entries examined, including excluded entries.

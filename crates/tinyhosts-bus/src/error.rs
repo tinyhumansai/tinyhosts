@@ -17,12 +17,6 @@
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Error {
-    /// Execute request JSON exceeded its fixed transport-compatible byte budget.
-    #[error("request exceeds the {max_bytes}-byte wire limit")]
-    RequestLimit {
-        /// Maximum unescaped request JSON bytes.
-        max_bytes: usize,
-    },
     /// Authorized preparation named an invalid or out-of-scope directory.
     #[error("invalid preparation directory: {reason}")]
     PreparationPath {

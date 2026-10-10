@@ -235,10 +235,13 @@ Limits per preparation are 4 MiB decoded source, 4,096 files, 16,384 examined
 entries (including excluded entries), 64 directory levels, 1,024 UTF-8 bytes per
 relative path and a conservative 6 MiB serialized snapshot budget. Raw reads are
 bounded; escaped paths and base64 expansion are charged before encoded files are
-allocated or published. Execute request JSON is limited to 7 MiB before decoding.
-These budgets leave headroom for nested JSON-string escaping under the 16 MiB
-TinyBus frame limit. Larger deployments require a future streaming protocol.
-Typed `PreparationPath`, `PreparationLimit` and `RequestLimit` errors explain
+allocated or published. The 6 MiB snapshot budget leaves headroom for at most
+twofold nested JSON-string escaping under the 16 MiB TinyBus frame limit. These
+preparation limits do not shrink legacy Launch/Deploy request budgets: requests
+that fit the existing transport continue to work, including an 8 MiB base64
+bundle. Larger *directory preparation* snapshots require a future streaming
+protocol; callers may still supply larger bundles through existing operations.
+Typed `PreparationPath` and `PreparationLimit` errors explain
 refusals. File contents are omitted from preparation Debug output.
 
 The OpenHuman adapter is a separate followup, gated on a published compatible

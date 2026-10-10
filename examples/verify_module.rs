@@ -76,6 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     verify_preparation(&client, &server).await?;
+    verify_legacy_large_deployment(&client, &server).await?;
 
     println!(
         "verified {} as TinyBus module `{}`",
@@ -161,5 +162,53 @@ async fn verify_preparation(
     }
     server.verify().await;
 
+    Ok(())
+}
+
+async fn verify_legacy_large_deployment(
+    client: &Connection,
+    server: &wiremock::MockServer,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use base64::Engine as _;
+    let bytes = vec![b'x'; 6 * 1024 * 1024];
+    wiremock::Mock::given(wiremock::matchers::method("POST"))
+        .and(wiremock::matchers::path("/v2/files"))
+        .and(wiremock::matchers::body_bytes(bytes.clone()))
+        .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+        .expect(1)
+        .mount(server)
+        .await;
+    wiremock::Mock::given(wiremock::matchers::method("POST"))
+        .and(wiremock::matchers::path("/v13/deployments"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "files":[{"file":"large.html", "size":bytes.len()}]
+        })))
+        .respond_with(
+            wiremock::ResponseTemplate::new(200)
+                .set_body_json(serde_json::json!({"id":"large-deploy","readyState":"READY"})),
+        )
+        .expect(1)
+        .mount(server)
+        .await;
+    let request = serde_json::json!({
+        "operation":"deploy", "credentials":{"api_key":"local-fixture"},
+        "base_url":server.uri(), "request":{"site":"fixture", "bundle":[{
+            "path":"large.html", "contents":base64::engine::general_purpose::STANDARD.encode(bytes)
+        }]}
+    })
+    .to_string();
+    if request.len() <= 7 * 1024 * 1024
+        || serde_json::to_vec(&request)?.len() >= 16 * 1024 * 1024 - 1024
+    {
+        return Err(
+            io::Error::other("large legacy fixture is outside intended wire budget").into(),
+        );
+    }
+    let proxy = client.proxy(INTERFACE, OBJECT_PATH, INTERFACE)?;
+    let deployed: String = proxy.call("Execute", (request,)).await?;
+    if !deployed.contains("large-deploy") {
+        return Err(io::Error::other("large legacy deployment failed").into());
+    }
+    server.verify().await;
     Ok(())
 }
