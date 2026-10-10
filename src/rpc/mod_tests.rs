@@ -438,3 +438,61 @@ async fn a_request_without_a_credential_falls_back_to_the_environment() {
 fn the_available_providers_are_listed() {
     assert_eq!(providers(), ["vercel"]);
 }
+
+#[test]
+fn pure_bus_deployment_inputs_are_accepted_by_the_validated_library_envelope() {
+    let operation =
+        tinyhosts_bus::rpc::Operation::<tinyhosts_bus::inputs::LaunchInput, _>::Deploy {
+            request: Box::new(tinyhosts_bus::inputs::DeploymentInput {
+                site: "site".into(),
+                framework: crate::Framework::Static,
+                target: crate::DeploymentTarget::Preview,
+                bundle: vec![tinyhosts_bus::inputs::BundleFile {
+                    path: "index.html".into(),
+                    contents: "SGVsbG8=".into(),
+                }],
+            }),
+        };
+    let request: Request =
+        serde_json::from_value(serde_json::to_value(operation).unwrap()).unwrap();
+    match request.operation {
+        Operation::Deploy { request } => {
+            assert!(request.validate().is_ok());
+            assert_eq!(request.bundle.files()[0].contents(), b"Hello");
+        }
+        _ => panic!("expected a deployment"),
+    }
+    let invalid = serde_json::json!({"operation":"deploy", "request": {
+        "site":"site", "bundle":[{"path":"../private", "contents":"SGVsbG8="}]
+    }});
+    assert!(serde_json::from_value::<Request>(invalid).is_err());
+}
+
+#[tokio::test]
+async fn contract_log_and_missing_site_results_keep_their_tagged_envelopes() {
+    let server = MockServer::start().await;
+    mount(
+        &server,
+        "GET",
+        "/v3/deployments/deploy/events",
+        200,
+        json!([]),
+    )
+    .await;
+    let logs = run(
+        &server,
+        json!({"operation":"deployment_logs", "id":"deploy"}),
+    )
+    .await;
+    assert_eq!(logs, json!({"result":"deployment_logs", "value":[]}));
+    mount(
+        &server,
+        "GET",
+        "/v9/projects/missing",
+        404,
+        json!({"error":{"code":"not_found"}}),
+    )
+    .await;
+    let site = run(&server, json!({"operation":"find_site", "site":"missing"})).await;
+    assert_eq!(site, json!({"result":"no_site"}));
+}

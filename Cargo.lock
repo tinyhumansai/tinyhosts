@@ -1366,10 +1366,20 @@ dependencies = [
  "thiserror",
  "tinybus",
  "tinybus-module",
+ "tinyhosts-bus",
  "tinytools",
  "tokio",
  "tracing",
  "wiremock",
+]
+
+[[package]]
+name = "tinyhosts-bus"
+version = "0.2.3"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror",
 ]
 
 [[package]]

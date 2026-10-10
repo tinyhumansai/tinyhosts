@@ -12,7 +12,7 @@ library and a TinyBus module: the `cdylib` is the same code behind a JSON method
 ```text
 src/
 ├── lib.rs              # crate docs + the entire public re-export surface
-├── error/mod.rs        # crate-wide `Error` and `Result<T>`
+├── error/mod.rs        # compatibility exports of contract `Error` and `Result<T>`
 ├── credentials/        # the API key: redacted, deserialize-only
 ├── host/               # the `Host` trait (mod.rs) and the unified vocabulary
 │   └── types.rs        #   every provider-independent type
@@ -24,6 +24,7 @@ src/
 │                       #   http.rs (status mapping), wire.rs (Vercel's shapes)
 ├── rpc/                # one JSON request in, one JSON result out
 └── tinybus_module/     # TinyBus interface, ABI exports, and integration tests
+crates/tinyhosts-bus/   # pure vocabulary, JSON envelopes and declarations
 tests/                  # integration tests against the public API only
 examples/               # runnable, compiled-in-CI usage examples
 vendor/tinybus/         # pinned TinyBus host types and module SDK
@@ -91,9 +92,9 @@ runs exactly them, so a green local run should mean a green CI run.
 
 ```sh
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo build --all-targets --all-features
-cargo test --all-features
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo build --workspace --all-targets --all-features
+cargo test --workspace --all-features
 ```
 
 Supporting commands:

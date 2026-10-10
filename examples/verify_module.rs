@@ -50,6 +50,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         );
     }
 
+    let server = wiremock::MockServer::start().await;
+    wiremock::Mock::given(wiremock::matchers::method("GET"))
+        .and(wiremock::matchers::path("/v10/projects"))
+        .respond_with(
+            wiremock::ResponseTemplate::new(200).set_body_json(
+                serde_json::json!({"projects": [{"id": "fixture", "name": "fixture"}]}),
+            ),
+        )
+        .mount(&server)
+        .await;
+    let operation: tinyhosts_bus::rpc::Operation =
+        tinyhosts_bus::rpc::Operation::ListSites { limit: 20 };
+    let mut request = serde_json::to_value(operation)?;
+    request["credentials"] = serde_json::json!({"api_key":"local-fixture"});
+    request["base_url"] = serde_json::json!(server.uri());
+    let response: String = proxy.call("Execute", (request.to_string(),)).await?;
+    let outcome: tinyhosts_bus::rpc::Outcome = serde_json::from_str(&response)?;
+    match outcome {
+        tinyhosts_bus::rpc::Outcome::Sites(sites)
+            if sites.len() == 1 && sites[0].id == "fixture" => {}
+        _ => {
+            return Err(io::Error::other("compiled module did not return the fixture site").into());
+        }
+    }
+
     println!(
         "verified {} as TinyBus module `{}`",
         module.display(),

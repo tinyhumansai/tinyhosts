@@ -196,3 +196,11 @@ hand-edit the version in `Cargo.toml`.
 ## License
 
 GPL-3.0-only. See [LICENSE](LICENSE).
+
+## Minimal host contract
+
+Hosts loading the compiled module depend on `tinyhosts-bus`. It supplies the
+existing request/result envelopes, hosting records, errors, provider identifiers,
+and tool declarations without linking provider implementations. See the
+[contract crate](crates/tinyhosts-bus/README.md) and
+[boundary spec](docs/specs/minimal-bus-contract.md).

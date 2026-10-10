@@ -27,7 +27,13 @@ exclude = [
 # producing the native module artifact that TinyBus loads at runtime.
 crate-type = ["rlib", "cdylib"]
 
+[workspace]
+members = ["crates/tinyhosts-bus"]
+exclude = ["vendor/tinybus"]
+
 [dependencies]
+# Pure vocabulary shared with dynamically loaded module consumers.
+tinyhosts-bus = { path = "crates/tinyhosts-bus", version = "0.2" }
 # TinyBus defines the message types, interface macro, and frozen module ABI used
 # by the generated integration. Socket and CLI features are unnecessary here.
 tinybus = { path = "vendor/tinybus/crates/tinybus", version = "0.1.0", default-features = false, features = ["macros", "modules"], optional = true }
