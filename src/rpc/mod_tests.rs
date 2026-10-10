@@ -496,3 +496,63 @@ async fn contract_log_and_missing_site_results_keep_their_tagged_envelopes() {
     let site = run(&server, json!({"operation":"find_site", "site":"missing"})).await;
     assert_eq!(site, json!({"result":"no_site"}));
 }
+
+#[tokio::test]
+async fn authorized_directory_preparation_uses_execute_without_provider_or_credentials() {
+    let directory = tempfile::tempdir().unwrap();
+    std::fs::write(directory.path().join("index.html"), "Hello").unwrap();
+    let response = execute_json(
+        &json!({
+            "operation":"prepare_bundle",
+            "directory":{"workspace":directory.path().to_string_lossy(),"path":"."}
+        })
+        .to_string(),
+    )
+    .await
+    .unwrap();
+    let outcome: Value = serde_json::from_str(&response).unwrap();
+    assert_eq!(outcome["result"], "prepared_bundle");
+    assert_eq!(outcome["value"]["contract_version"], json!([1, 1]));
+    assert_eq!(outcome["value"]["bundle"][0]["contents"], "SGVsbG8=");
+    assert_eq!(outcome["value"]["total_bytes"], 5);
+}
+
+#[tokio::test]
+async fn supplied_deployment_credentials_are_refused_before_provider_dispatch() {
+    let server = MockServer::start().await;
+    mount(
+        &server,
+        "POST",
+        "/v13/deployments",
+        200,
+        json!({"id":"unexpected"}),
+    )
+    .await;
+    let response = execute_json(&json!({
+        "credentials":{"api_key":"fixture"},"base_url":server.uri(),
+        "operation":"deploy","request":{"site":"site","bundle":[{"path":".ssh/id_rsa","contents":"c2VjcmV0"}]}
+    }).to_string()).await;
+    assert!(matches!(response, Err(Error::InvalidBundlePath { .. })));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn oversized_execute_json_is_refused_before_deserialization() {
+    let request = " ".repeat(tinyhosts_bus::preparation::MAX_RPC_REQUEST_BYTES + 1);
+    assert!(matches!(
+        execute_json(&request).await,
+        Err(Error::RequestLimit { .. })
+    ));
+}
+
+#[tokio::test]
+async fn supplied_launch_credentials_are_refused_before_site_lookup() {
+    let server = MockServer::start().await;
+    let request = json!({ "operation":"launch", "credentials":{"api_key":"fixture"}, "base_url":server.uri(),
+        "plan":{"site":{"name":"shop"},"bundle":[{"path":"app/.env.local","contents":"c2VjcmV0"}]}});
+    assert!(matches!(
+        execute_json(&request.to_string()).await,
+        Err(Error::InvalidBundlePath { .. })
+    ));
+    assert!(server.received_requests().await.unwrap().is_empty());
+}

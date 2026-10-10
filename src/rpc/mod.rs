@@ -34,6 +34,16 @@ pub use tinyhosts_bus::rpc::Outcome;
 /// the environment holds none, [`Error::UnknownProvider`] when this build has no
 /// adapter for the named provider, or whatever the operation itself returns.
 pub async fn execute(request: Request) -> Result<Outcome> {
+    if let Operation::PrepareBundle { directory } = &request.operation {
+        return crate::preparation::prepare_bundle(directory).map(Outcome::PreparedBundle);
+    }
+    match &request.operation {
+        Operation::Launch { plan } => crate::preparation::validate_deployment_bundle(&plan.bundle)?,
+        Operation::Deploy { request } => {
+            crate::preparation::validate_deployment_bundle(&request.bundle)?;
+        }
+        _ => {}
+    }
     let credentials = match request.credentials {
         Some(credentials) => credentials,
         None => request.provider.credentials_from_env()?,
@@ -92,6 +102,11 @@ pub async fn execute(request: Request) -> Result<Outcome> {
 /// Returns [`Error::Envelope`] when the request is not a [`Request`] or the
 /// result cannot be serialized, and otherwise whatever [`execute`] returns.
 pub async fn execute_json(request: &str) -> Result<String> {
+    if request.len() > tinyhosts_bus::preparation::MAX_RPC_REQUEST_BYTES {
+        return Err(Error::RequestLimit {
+            max_bytes: tinyhosts_bus::preparation::MAX_RPC_REQUEST_BYTES,
+        });
+    }
     let request: Request = serde_json::from_str(request).map_err(|error| Error::Envelope {
         reason: error.to_string(),
     })?;

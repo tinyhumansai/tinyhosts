@@ -3,6 +3,7 @@ pub mod error;
 pub mod inputs;
 mod launch;
 pub mod model;
+pub mod preparation;
 pub mod rpc;
 pub use error::{Error, Result};
 pub use launch::Launch;
@@ -13,6 +14,16 @@ pub const BUS_NAME: &str = "ai.tinyhumans.tinyhosts.Hosting";
 pub const OBJECT_PATH: &str = "/ai/tinyhumans/tinyhosts/Hosting";
 /// Member names in their existing order and arity.
 pub const METHODS: [&str; 2] = ["Execute", "Providers"];
+/// Additive hosting operation vocabulary, independent of artifact package releases.
+/// 1.0 is the original Execute/Providers surface; 1.1 adds authorized preparation.
+pub const WIRE_CONTRACT_VERSION: (u32, u32) = (1, 1);
+
+/// Whether an artifact serves every operation in this vocabulary.
+#[must_use]
+pub fn is_compatible(module: (u32, u32)) -> bool {
+    module.0 == WIRE_CONTRACT_VERSION.0 && module.1 >= WIRE_CONTRACT_VERSION.1
+}
+
 /// Contract package version, synchronized with the released module manifest.
 pub const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// Recorded agent tool declarations, including approval metadata.

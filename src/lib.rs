@@ -54,6 +54,7 @@ pub mod credentials;
 pub mod error;
 pub mod host;
 pub mod launch;
+pub mod preparation;
 pub mod providers;
 pub mod rpc;
 #[cfg(feature = "tools")]

@@ -75,6 +75,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
+    verify_preparation(&client, &server).await?;
+
     println!(
         "verified {} as TinyBus module `{}`",
         module.display(),
@@ -94,4 +96,70 @@ fn module_argument() -> Result<PathBuf, io::Error> {
                 "usage: cargo run --example verify_module -- <module-path>",
             )
         })
+}
+
+async fn verify_preparation(
+    client: &Connection,
+    server: &wiremock::MockServer,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let proxy = client.proxy(INTERFACE, OBJECT_PATH, INTERFACE)?;
+    let directory = tempfile::tempdir()?;
+    std::fs::write(directory.path().join("index.html"), "Hello")?;
+    let prepared: String = proxy
+        .call(
+            "Execute",
+            (serde_json::json!({
+                "operation":"prepare_bundle", "directory":{
+                    "workspace": directory.path().canonicalize()?.to_string_lossy(), "path":"."
+                }
+            })
+            .to_string(),),
+        )
+        .await?;
+    let prepared: tinyhosts_bus::rpc::Outcome = serde_json::from_str(&prepared)?;
+    let tinyhosts_bus::rpc::Outcome::PreparedBundle(snapshot) = prepared else {
+        return Err(io::Error::other("missing prepared snapshot").into());
+    };
+    if snapshot.contract_version != (1, 1) || snapshot.total_bytes != 5 {
+        return Err(io::Error::other("incorrect preparation facts").into());
+    }
+    std::fs::write(
+        directory.path().join("index.html"),
+        "Changed after preparation",
+    )?;
+    wiremock::Mock::given(wiremock::matchers::method("POST"))
+        .and(wiremock::matchers::path("/v2/files"))
+        .and(wiremock::matchers::body_string("Hello"))
+        .respond_with(wiremock::ResponseTemplate::new(200).set_body_json(serde_json::json!({})))
+        .expect(1)
+        .mount(server)
+        .await;
+    wiremock::Mock::given(wiremock::matchers::method("POST"))
+        .and(wiremock::matchers::path("/v13/deployments"))
+        .and(wiremock::matchers::body_partial_json(serde_json::json!({
+            "files":[{"file":"index.html", "size":5}]
+        })))
+        .respond_with(
+            wiremock::ResponseTemplate::new(200)
+                .set_body_json(serde_json::json!({"id":"snapshot-deploy","readyState":"READY"})),
+        )
+        .expect(1)
+        .mount(server)
+        .await;
+    let deployed: String = proxy
+        .call(
+            "Execute",
+            (serde_json::json!({
+                "operation":"deploy", "credentials":{"api_key":"local-fixture"},
+                "base_url":server.uri(), "request":{"site":"fixture", "bundle":snapshot.bundle}
+            })
+            .to_string(),),
+        )
+        .await?;
+    if !deployed.contains("snapshot-deploy") {
+        return Err(io::Error::other("snapshot deployment did not use captured bytes").into());
+    }
+    server.verify().await;
+
+    Ok(())
 }

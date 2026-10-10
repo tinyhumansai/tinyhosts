@@ -17,6 +17,24 @@
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Error {
+    /// Execute request JSON exceeded its fixed transport-compatible byte budget.
+    #[error("request exceeds the {max_bytes}-byte wire limit")]
+    RequestLimit {
+        /// Maximum unescaped request JSON bytes.
+        max_bytes: usize,
+    },
+    /// Authorized preparation named an invalid or out-of-scope directory.
+    #[error("invalid preparation directory: {reason}")]
+    PreparationPath {
+        /// Validation failure, without file contents.
+        reason: String,
+    },
+    /// Source collection exceeded its configured bounded budget.
+    #[error("directory preparation exceeds {limit}")]
+    PreparationLimit {
+        /// The exhausted budget name.
+        limit: String,
+    },
     /// An API key was empty or contained only whitespace.
     #[error("api key must not be empty")]
     EmptyApiKey,

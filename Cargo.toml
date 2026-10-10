@@ -51,6 +51,10 @@ serde = { version = "1", features = ["derive"] }
 # Request and response bodies for the provider REST APIs, and the JSON envelope
 # the `rpc` module exchanges over the bus.
 serde_json = "1"
+# Directory preparation anchors traversal to an authorized directory descriptor.
+# These safe capability APIs reject symlink following without platform-specific unsafe code.
+cap-std = "4"
+cap-fs-ext = "4"
 # Bundle file contents travel as base64 in JSON: a byte array would triple the
 # size of every deployment payload crossing the bus.
 base64 = "0.23"

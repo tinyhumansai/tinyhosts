@@ -40,6 +40,11 @@ pub struct Request<
 #[serde(tag = "operation", rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum Operation<P = crate::inputs::LaunchInput, D = crate::inputs::DeploymentInput> {
+    /// Collect an already-authorized directory without provider effects or credential lookup.
+    PrepareBundle {
+        /// The host-approved workspace scope and relative directory.
+        directory: crate::preparation::AuthorizedDirectory,
+    },
     /// Run a whole launch: site, database, environment, domains, deployment.
     Launch {
         /// The plan to run.
@@ -151,6 +156,8 @@ const fn default_limit() -> u32 {
 #[serde(tag = "result", content = "value", rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum Outcome {
+    /// Bounded source files and preparation facts, ready for Launch or Deploy.
+    PreparedBundle(crate::preparation::PreparedBundle),
     /// A completed launch.
     ///
     /// Boxed because it carries a whole site, database and deployment: unboxed,

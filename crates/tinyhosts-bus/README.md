@@ -18,3 +18,15 @@ approval, authorized workspace selection, credential custody, and lifecycle
 policy stay with OpenHuman. The module validates inputs and talks to providers.
 The package version follows the module release version; the release workflow
 bumps both manifests together. Hosts pin published artifacts and verify digests.
+
+
+Operation vocabulary `WIRE_CONTRACT_VERSION = (1, 1)` adds `prepare_bundle` to
+Execute, without changing method arities or model tool declarations. The host
+constructs `AuthorizedDirectory` only after authorizing a concrete canonical
+workspace and relative input. The module returns a stateless `PreparedBundle`
+containing actual files and bounded facts. Approve and deploy this snapshot's
+exact bytes, rather than recollecting the directory. The DTO is a scope declaration,
+not an authorization token, and must never be constructed from generic model
+forwarding. See the implementation README for byte/frame limits, credential
+exclusions and the stricter no-symlink source policy. Filesystem traversal and
+base64 encoding are absent from this contract crate.
