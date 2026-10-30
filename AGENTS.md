@@ -89,8 +89,16 @@ written to expect. `Vercel::with_base_url` exists for exactly this.
 
 ## Build And Test
 
-Run every command from the repository root. These four are the contract; CI
-runs exactly them, so a green local run should mean a green CI run.
+Run every command from the repository root. CI's reviewed-release contract
+checks the caller pin and package, dependency, and vendored TinyBus versions
+on every pull request and every push to `main`. Run it as part of normal
+validation:
+
+```sh
+python3 -B -m unittest tests.test_reviewed_release -v
+```
+
+These four commands are the Rust build and test contract used by CI:
 
 ```sh
 cargo fmt --all -- --check
@@ -271,9 +279,10 @@ For automated contributors specifically:
 
 1. **Read before writing.** Inspect the surrounding module and match its
    conventions, comment density, and idiom rather than importing a house style.
-2. **Verify, do not assume.** Run the four contract commands and read their
-   output before reporting a task complete. Report failures with the output;
-   never claim a check passed that you did not run.
+2. **Verify, do not assume.** Run the reviewed-release Python contract and
+   four Rust build/test contract commands and read their output before
+   reporting a task complete. Report failures with the output; never claim a
+   check passed that you did not run.
 3. **Stay in scope.** Implement what was asked. Do not opportunistically
    refactor, reformat, upgrade dependencies, or "fix" unrelated code — raise it
    instead.

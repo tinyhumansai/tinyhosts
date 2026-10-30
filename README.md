@@ -149,13 +149,19 @@ git submodule update --init --recursive
 ```
 
 ```sh
+python3 -B -m unittest tests.test_reviewed_release -v
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo build --all-targets --all-features
-cargo test --all-features
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo build --workspace --all-targets --all-features
+cargo test --workspace --all-features
 ```
 
-Those four are exactly what CI runs. Optional extras:
+The Python contract test checks the reviewed workflow pin, package and
+dependency versions, and vendored TinyBus compatibility. CI runs it on every
+pull request and every push to `main`. The four Cargo commands are the Rust
+build and test contract.
+
+Optional extras:
 
 ```sh
 cargo run --example basic            # build a launch plan, send nothing
@@ -171,9 +177,22 @@ the suite is offline, deterministic, and needs no token.
 ## Releasing
 
 Update the workspace versions, local dependency constraints, and lockfile in a
-reviewed pull request. After it merges to `main`, create the matching `v<version>`
-tag on that commit. The **Release** workflow runs on the tag; its manual input
-accepts an existing tag when retrying a release.
+reviewed pull request. For an ordinary release on `main`, create the matching
+`v<version>` tag on the merged commit. The registered **Release** workflow runs
+on the tag. Its manual dispatch defaults `release_mode` to `main` and accepts an
+existing tag when retrying a release.
+
+For a release from the canonical epic branch
+`tinyhumansai/tinyhosts:epic/8056-modules-wiring`, select `reviewed-epic` in the
+registered **Release** workflow's `release_mode`. Create and push a signed
+`v<version>` tag that points to the exact merge commit of the canonical pull
+request, then dispatch with `release_mode=reviewed-epic`, `tag=v0.4.2`, and
+`reviewed_pr=36` (replace the examples with the matching version and positive
+canonical pull request number). The tag must already exist when dispatched;
+the workflow derives its version from the tag. Preflight checks the tag target
+and that the pull request is merged to the canonical epic branch with its
+required reviews and checks; it does not verify the tag's cryptographic
+signature.
 
 The shared release workflow builds and verifies 17 native and distro archives across
 Linux, macOS, and Windows. Assets follow
@@ -182,7 +201,8 @@ its SHA-256 `modules.toml`, license, and [`MODULE.md`](MODULE.md).
 `checksum.toml` records the archive hashes. Verification loads each native module
 through TinyBus and calls `Providers` before publishing the immutable release.
 
-TinyBus itself is not shipped here; the pinned submodule is the build-time SDK.
+TinyBus itself is not shipped here; the pinned v0.3.3 source submodule is the
+build-time SDK, and module dependencies require that compatible SDK release.
 
 ## Documentation
 

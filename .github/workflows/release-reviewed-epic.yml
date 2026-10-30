@@ -1,0 +1,31 @@
+name: Reviewed epic release (dispatch from canonical epic branch)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag at the exact merged canonical PR commit
+        type: string
+        required: true
+      version:
+        description: Module version without the leading v
+        type: string
+        required: true
+      reviewed-pr:
+        description: Positive canonical PR number whose merge commit is tagged
+        type: number
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: read
+  checks: read
+  actions: read
+
+jobs:
+  release:
+    uses: tinyhumansai/.github/.github/workflows/module-reviewed-epic-release.yml@6ed83b04aab2d8977ec62e966cb914531e534fa4
+    with:
+      tag: ${{ inputs.tag }}
+      version: ${{ inputs.version }}
+      reviewed-pr: ${{ inputs['reviewed-pr'] }}

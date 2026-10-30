@@ -2,10 +2,22 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      release_mode:
+        description: Choose an ordinary main release or reviewed epic release
+        type: choice
+        options:
+          - main
+          - reviewed-epic
+        default: main
+        required: true
       tag:
         description: Existing version tag (vX.Y.Z) committed through a reviewed PR
         type: string
         required: true
+      reviewed_pr:
+        description: Positive canonical PR number for a reviewed epic release
+        type: number
+        required: false
   push:
     tags: ['v*']
 permissions: {}
@@ -18,20 +30,48 @@ jobs:
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
       version: ${{ steps.tag.outputs.version }}
+      mode: ${{ steps.tag.outputs.mode }}
+      reviewed_pr: ${{ steps.tag.outputs.reviewed_pr }}
     steps:
       - id: tag
         shell: bash
         env:
           TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
+          MODE: ${{ github.event_name == 'workflow_dispatch' && inputs.release_mode || 'main' }}
+          REVIEWED_PR: ${{ github.event_name == 'workflow_dispatch' && inputs.reviewed_pr || '' }}
         run: |
           set -euo pipefail
+          [[ "$MODE" == "main" || "$MODE" == "reviewed-epic" ]] || {
+            echo "release_mode must be main or reviewed-epic" >&2
+            exit 2
+          }
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]] || {
             echo "tag must be v-prefixed semver" >&2
             exit 2
           }
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          if [[ "$MODE" == "reviewed-epic" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]] || {
+              echo "reviewed-epic mode requires workflow_dispatch" >&2
+              exit 2
+            }
+            [[ "$REVIEWED_PR" =~ ^[1-9][0-9]*$ ]] || {
+              echo "reviewed_pr must be a positive canonical PR number" >&2
+              exit 2
+            }
+          elif [[ -n "$REVIEWED_PR" ]]; then
+            echo "reviewed_pr is only valid in reviewed-epic mode" >&2
+            exit 2
+          fi
+          {
+            echo "tag=$TAG"
+            echo "version=${TAG#v}"
+            echo "mode=$MODE"
+            if [[ "$MODE" == "reviewed-epic" ]]; then
+              echo "reviewed_pr=$REVIEWED_PR"
+            fi
+          } >> "$GITHUB_OUTPUT"
   module-release:
+    if: needs.resolve.outputs.mode == 'main'
     needs: resolve
     permissions:
       contents: write
@@ -40,3 +80,16 @@ jobs:
       tag: ${{ needs.resolve.outputs.tag }}
       version: ${{ needs.resolve.outputs.version }}
       module-crate: tinyhosts
+  reviewed-module-release:
+    if: needs.resolve.outputs.mode == 'reviewed-epic'
+    needs: resolve
+    permissions:
+      contents: write
+      pull-requests: read
+      checks: read
+      actions: read
+    uses: tinyhumansai/.github/.github/workflows/module-reviewed-epic-release.yml@6ed83b04aab2d8977ec62e966cb914531e534fa4
+    with:
+      tag: ${{ needs.resolve.outputs.tag }}
+      version: ${{ needs.resolve.outputs.version }}
+      reviewed-pr: ${{ fromJSON(needs.resolve.outputs.reviewed_pr) }}
