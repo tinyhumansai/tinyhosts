@@ -42,6 +42,7 @@ fn run_resolver(tag: &str, body: &str) -> Result<std::process::Output, Box<dyn s
     let result = Command::new(bash)
         .args(["-c", body])
         .env("TAG", tag)
+        .env("GITHUB_EVENT_NAME", "push")
         .env("GITHUB_OUTPUT", output.to_string_lossy().replace('\\', "/"))
         .output()?;
     if result.status.success() {

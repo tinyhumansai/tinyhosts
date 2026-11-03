@@ -12,15 +12,23 @@ This repository follows the shared module CI and release contract maintained in
 ## Development Setup
 
 Install a stable Rust toolchain with Rust 2024 support (see `rust-version` in
-`Cargo.toml` for the minimum supported version), initialize the vendored
-submodules, then run these baseline checks locally; the reusable CI workflow also runs the cross-platform module gates described above:
+`Cargo.toml` for the minimum supported version) and Python 3.11 or later (the
+reviewed-release contract test uses `tomllib`), then initialize the vendored
+submodules:
 
 ```sh
 git submodule update --init --recursive
+```
+
+Run the baseline validation locally; the reusable CI workflow also runs the
+cross-platform module gates described above:
+
+```sh
+python3 -B tests/test_reviewed_release.py -v
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo build --all-targets --all-features
-cargo test --all-features
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo build --workspace --all-targets --all-features
+cargo test --workspace --all-features
 ```
 
 CI also requires at least 90% line coverage in every source file. After
@@ -64,10 +72,11 @@ regardless.
 
 ## Pull Request Checklist
 
+- [ ] `python3 -B tests/test_reviewed_release.py -v`
 - [ ] `cargo fmt --all -- --check`
-- [ ] `cargo clippy --all-targets --all-features -- -D warnings`
-- [ ] `cargo build --all-targets --all-features`
-- [ ] `cargo test --all-features`
+- [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- [ ] `cargo build --workspace --all-targets --all-features`
+- [ ] `cargo test --workspace --all-features`
 - [ ] `scripts/check-coverage.sh`
 - [ ] tests added or updated for behavior changes
 - [ ] documentation updated for public API, architecture, or usage changes

@@ -149,13 +149,19 @@ git submodule update --init --recursive
 ```
 
 ```sh
+python3 -B tests/test_reviewed_release.py -v
 cargo fmt --all -- --check
-cargo clippy --all-targets --all-features -- -D warnings
-cargo build --all-targets --all-features
-cargo test --all-features
+cargo clippy --workspace --all-targets --all-features -- -D warnings
+cargo build --workspace --all-targets --all-features
+cargo test --workspace --all-features
 ```
 
-Those four are exactly what CI runs. Optional extras:
+The Python contract test checks the main-only release route, package and
+dependency versions, and vendored TinyBus compatibility. CI runs it on every
+pull request and every push to `main`. The four Cargo commands are the Rust
+build and test contract.
+
+Optional extras:
 
 ```sh
 cargo run --example basic            # build a launch plan, send nothing
@@ -173,7 +179,9 @@ the suite is offline, deterministic, and needs no token.
 Update the workspace versions, local dependency constraints, and lockfile in a
 reviewed pull request. After it merges to `main`, create the matching `v<version>`
 tag on that commit. The **Release** workflow runs on the tag; its manual input
-accepts an existing tag when retrying a release.
+accepts an existing tag when retrying a release. Releases come from `main`
+only: a dispatch from any other branch is refused, and so is a tag whose
+commit is not on `main`.
 
 The shared release workflow builds and verifies 17 native and distro archives across
 Linux, macOS, and Windows. Assets follow
@@ -182,7 +190,8 @@ its SHA-256 `modules.toml`, license, and [`MODULE.md`](MODULE.md).
 `checksum.toml` records the archive hashes. Verification loads each native module
 through TinyBus and calls `Providers` before publishing the immutable release.
 
-TinyBus itself is not shipped here; the pinned submodule is the build-time SDK.
+TinyBus itself is not shipped here; the pinned v0.3.6 source submodule is the
+build-time SDK, and module dependencies require that compatible SDK release.
 
 ## Documentation
 

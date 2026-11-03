@@ -25,6 +25,13 @@ jobs:
           TAG: ${{ github.event_name == 'push' && github.ref_name || inputs.tag }}
         run: |
           set -euo pipefail
+          # Releases come from the official main branch only: a dispatch from
+          # any other branch is refused, and the shared release workflow
+          # refuses a tag whose commit is not on main.
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "release must be dispatched from main" >&2
+            exit 2
+          fi
           [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]] || {
             echo "tag must be v-prefixed semver" >&2
             exit 2

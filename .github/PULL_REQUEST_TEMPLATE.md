@@ -14,10 +14,11 @@
 
 Commands actually run, with their outcome:
 
+- [ ] `python3 -B tests/test_reviewed_release.py -v`
 - [ ] `cargo fmt --all -- --check`
-- [ ] `cargo clippy --all-targets --all-features -- -D warnings`
-- [ ] `cargo build --all-targets --all-features`
-- [ ] `cargo test --all-features`
+- [ ] `cargo clippy --workspace --all-targets --all-features -- -D warnings`
+- [ ] `cargo build --workspace --all-targets --all-features`
+- [ ] `cargo test --workspace --all-features`
 
 ## Tests
 
